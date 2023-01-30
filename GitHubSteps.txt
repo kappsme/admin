@@ -1,0 +1,49 @@
+# SECUENCIA
+ssh-keygen # ADD THIS RESULT IN SSH KEYS AUTH KEYS ON GITHUB
+
+
+# Install GIT on Computers (Add C:\Program Files\Git\bin - or equivalent - to PATH variable if necessary)
+git config --global user.email "kenny_carcamo@hotmail.com"
+git config --global user.name "Kenny Asus Duo"
+
+# CREATE A FOLDER TO WORK
+# Clonar Repositorio TX 
+git clone git@github.com:kappsme/tx.git
+
+## SI HAY QUE COPIAR LA BASE de DATOS.. TAMBIEN
+## Y Archivo .env
+
+# Cada vez que se cambia de computadora para trabajar
+git pull
+
+# agrega archivos al tracking de versiones
+git add .
+
+# empaqueta el stage
+git commit -m "inicializacion"
+
+# ENVIAR CAMBIOS
+git push -u origin master
+
+
+# SI SE INICIA DESDE 0
+# inicializa repositorio
+git init
+
+
+# Seleccionar Branch master
+git branch -M master
+
+# loading in remote (previously: New repository created on GH, SSH key added of new computer on GH portal)
+git remote add origin git@github.com:kappsme/tx.git
+
+
+###SI HAY ERRORES
+git config --global --add safe.directory C:/code/tx
+
+### AUTHENTICATION USANDO TOKEN DE GitHub
+git remote set-url origin https://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@github.com/kappsme/tx.git
+
+
+
+

@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  admin:
+    image: kennycarcamo/kapps:admin
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    ports:
+      - "8000:3000"
+    volumes:
+      - .:/app/codigo
+    working_dir: /app/codigo
+    entrypoint: [ "bash", "-c", "python3 main.py"]
+  kappsdb:
+    image: mysql:5.7.40
+    env_file:
+      - .env 
+    hostname: ${MYSQL_HOST}
+    working_dir: /db
+    ports:
+      - '3306:3306'
+    volumes:
+      - ../kappsDB:/db
+  kappsdbsetup:
+    image: mysql:5.7.40
+    depends_on:
+      - kappsdb
+    restart: 'no'
+    volumes:
+      - ../kappsDB:/db
+    working_dir: /db
+    entrypoint: [ 'bash', '-c', 'sleep 10 && ${MYSQL_ROOT_CONNECTION} < ${MYSQL_DUMP_FILE} && ${MYSQL_ROOT_CONNECTION} -e "${GRANTS_KAPPDB_SCHEMA}" && ${MYSQL_ROOT_CONNECTION} -e "${GRANTS_APP_SCHEMA}"']

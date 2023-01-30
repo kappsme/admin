@@ -1,0 +1,37 @@
+docker network create tx-network
+docker build -t tx .
+
+docker build -t kennycarcamo/kapps:tx .
+docker push kennycarcamo/kapps:tx
+
+docker run -dp 3000:3000 -v "$(pwd):/app" admin
+
+select username, password2, convert(aes_decrypt(password2,UNHEX(SHA2('@#Parangaturimicuaro&&191410',512))),char) from kapps_db.accounts;
+
+docker-compose up
+
+docker image tag kennycarcamo/codigo-etga:latest kennycarcamo/kapps:etga      
+docker push kennycarcamo/kapps:etga
+
+
+remove all containers
+	docker rm -f $(docker container ps -aq)
+remove all Images
+	docker rmi $(docker images -a -q)
+remove all volumes
+	docker volume rm $(docker volume ls -q)
+docker system prune
+
+# SABER LA IP
+Dentro del container (casi todos los casos)
+	Comando: ip a
+fuera del container		
+	Comando: docker exec -it b94ef3169cd4 ip a
+
+
+#acceder al contenedor
+docker exec -ti codigocontenedor /bin/bash
+
+
+#Correr el contenedor y entrar en el bash de una vez
+docker run --rm -it --entrypoint bash <image-name-or-id>
