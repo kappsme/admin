@@ -1,0 +1,352 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+{{ prueba }}
+<script type=text/javascript src="{{ url_for('static', filename='chosen.jquery.min.js') }}"></script>
+<script type=text/javascript src="{{ url_for('static', filename='login_files/crud_user.js') }}"></script>
+<div class="form-group">
+
+	<div class="card text-white my-2 mx-2 px-0 border">
+		<div class="card-header text-center bg-primary my-0 mx-0 py-0" style="font-size:1.1rem">
+			{{ datos_aplicacion['clave'] }} USUARIOS
+		</div>
+		<div class="card-body px-0 py-1 my-0">
+			<div>
+				<table class="table table-bordered">
+					<thead>
+						<tr style="text-align: center;color: rgb(255, 255, 255);">
+							<th scope="col" class="px-1 mx-1 alert-warning">
+								<p style="font-size:1rem" class="p-0 m-0">EMPRESA</p>
+							</th>
+							<th scope="col" class="px-1 mx-1 alert-primary">
+								<p style="font-size:1rem" class="p-0 m-0">USUARIOS DE LA CUENTA</p>
+							</th>
+							<th scope="col" class="px-1 mx-1 alert-primary">
+								<p style="font-size:1rem" class="p-0 m-0">USUARIOS UTILIZADOS</p>
+							</th>
+							<th scope="col" class="px-1 mx-1 alert-primary">
+								<p style="font-size:1rem" class="p-0 m-0">RESPONSABLE</p>
+							</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						<tr style="text-align: center;">
+							<td class="p-1">
+								<b>{{ datos_aplicacion['name'] }}</b>
+							</td>
+							<td class="p-1">
+								<p style="font-size:1.5rem"> <b>{{ datos_aplicacion['licencias'] }}</b>
+							</td>
+							<td class="p-1">
+								<p style="font-size:1.5rem"> <b>{{ usuarios_activos }}</b>
+							</td>
+							<td class="p-1">
+								<b>{{ datos_aplicacion['responsable'] }}</b>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<table class="table table-bordered">
+					<thead class="bg-primary">
+						<tr style="text-align: center;color: rgb(255, 255, 255);">
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Usuario
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Nombre
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Correo
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Nivel
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Estado
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Bloqueo
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Sesión<br>(Minutos)
+							</th>
+							<th scope="col" class="p-1 mx-1">
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!--Ciclo de Usuarios-->
+						{% for rmov in datos_usuarios: %}
+						<tr class="border p-0 m-0
+					{% if rmov['estado']==1: %}alert-primary
+					{% elif (rmov['estado']==0 or rmov['estado']==2): %} alert-warning
+					{% endif %}" style="font-size:0.9rem;color:midnightblue;">
+							<td class="p-1 m-0" style="border-color: white;">
+								<p class="p-0 m-0">{{ rmov['username'] }}</p>
+							</td>
+							<td class="p-1 m-0" style="border-color: white;">
+								<p class="p-0 m-0">
+									{{ rmov['name'] + ' ' + rmov['lastname'] }}</p>
+							</td>
+							<td class="p-1 m-0" style="border-color: white;">
+								<input class="form-control form-control-sm" type="email"
+									id="usuario{{rmov['id']}}-correo" style="font-size:0.75rem;height:1.7rem;"
+									placeholder="..." disabled value="{{rmov['email']}}">
+							</td>
+							<td class="p-1 m-0" style="border-color: white;">
+								<p class="p-0 m-0">
+									<select name="nivel" id="usuario{{rmov['id']}}-nivel"
+										class="form-control chosen-select mx-0 px-0" disabled>
+										<option value="" disabled>Selecione el Nivel</option>
+										<option value="1">Administrador</option>
+										<option value="2">Operador N1</option>
+										<option value="3">Operador N2</option>
+									</select>
+									<script>
+										$('#usuario{{rmov["id"]}}-nivel').val("{{rmov['nivel']}}");
+										$("#usuario{{rmov['id']}}-nivel").chosen();
+										// $('select').trigger("chosen:updated");
+									</script>
+
+								</p>
+							</td>
+							<td class="p-1 m-0" style="border-color: white;">
+								<p class="p-0 m-0">
+									<select name="usuario{{rmov['id']}}-estado" id="usuario{{rmov['id']}}-estado"
+										class="form-control chosen-select mx-0 px-0" disabled>
+										<option value="" disabled>Selecione el Estado</option>
+										<option value="1">Activo</option>
+										<option value="0">Desactivo</option>
+										<option value="2">N/A</option>
+									</select>
+									<script>
+										$('#usuario{{rmov["id"]}}-estado').val("{{rmov['estado']}}");
+										$("#usuario{{rmov['id']}}-estado").chosen();
+									</script>
+								</p>
+							</td>
+							<td class="p-1 m-0" style="border-color: white;">
+								<p class="p-0 m-0">
+									<input type="checkbox" id="usuario{{rmov['id']}}-bloqueo" {% if rmov['bloqueo']==1:
+										%} checked {% endif %} disabled>
+								</p>
+							</td>
+							<td class="p-1 m-0" style="border-color: white;">
+								<p class="p-0 m-0">
+									<input class="form-control form-control-sm" type="number"
+										id="usuario{{rmov['id']}}-vigencia" style="font-size:0.9rem;height:1.7rem;"
+										placeholder="..." disabled value="{{ '{:0,.0f}'.format(rmov['vigencia']/60) }}">
+								</p>
+							</td>
+							<td class="p-0 m-0" style="border: none;">
+								<div class="container">
+									<div class="row p-1">
+							
+									{% if rmov['estado']==1: %}
+										{% if rmov['tipo']==1: %}
+										<!--CORREO-->
+										<div class="col-3 py-1">
+
+											<a id="btn-movimiento-enviar-correo" type="button"
+												class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+												movimiento="{{rmov['id']}}" cliente="{{datos_cliente['id']}}"
+												data-target="#modal-movimiento-correo-enviado" data-toggle="modal">
+												<img src="{{ url_for('static', filename='icons_svg/envelope1.svg') }}"
+													alt="Correo" class="img inline" style="width:1.7rem;height:1.3rem;"
+													title="Correo">
+											</a>
+										</div>
+
+										{% endif %}
+										{% if rmov['tipo']==1: %}
+										<!-- ENVIAR POR WHATSAPP-->
+										<div class="col-3 py-1">
+											<a id="link-whatsapp-movimiento" type="button"
+												class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+												target="_blank"
+												href="https://api.whatsapp.com/send?phone=506{{datos_cliente['telefono']}}&text=Buen%20d%C3%ADa.%20Le%20saludamos%20de%20Electr%C3%B3nica%20Torres.%20Anexo%20Recibo%20solicitado.">
+												<img src="{{ url_for('static', filename='icons_svg/whatsApp-Logo.svg') }}"
+													alt="Enviar WhatsApp (A Teléfono 1)" class="img inline"
+													style="width:1.7rem;height:1.7rem;"
+													title="Enviar WhatsApp (A Teléfono 1)">
+											</a>
+										</div>
+
+										{% endif %}
+										<!--EDITAR USUARIO-->
+										<div id="usuario{{rmov['id']}}-div-editar" class="col py-1">
+											<button id="btn-editar-usuario" name="btn-editar-usuario" type="submit"
+												class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+												data-id-user="{{rmov['id']}}">
+												<img src="{{ url_for('static', filename='icons_svg/customer.svg') }}"
+													alt="Editar" class="img inline p-0 m-0"
+													style="width:1.7rem;height:1.3rem;" title="Editar">
+											</button>
+										</div>
+										<!--GUARDAR USUARIO-->
+										<div id="usuario{{rmov['id']}}-div-guardar" class="col py-1" hidden>
+											<button id="btn-guardar-usuario" name="btn-guardar-usuario" type="submit"
+												class="btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
+												data-id-user="{{rmov['id']}}" data-username="{{rmov['username']}}">
+												<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}"
+													alt="Guardar" class="img inline p-0 m-0"
+													style="width:1.7rem;height:1.3rem;" title="Guardar">
+											</button>
+										</div>
+
+										<!-- RESET SESION-->
+										{% if rmov['id']!=session['id']: %}
+										<div class="col py-1">
+											<button id="btn-restablecer-sesion" name="btn-restablecer-sesion"
+												type="submit" class="btn btn-primary p-0 m-0"
+												style="width:1.8rem;height:1.8rem;" data-id-user="{{rmov['id']}}"
+												data-username="{{rmov['username']}}">
+												<img src="{{ url_for('static', filename='icons_svg/volver3.svg') }}"
+													alt="Restablecer Sesión" class="img inline p-0 m-0"
+													style="width:1.7rem;height:1.3rem;" title="Restablecer Sesión">
+											</button>
+										</div>
+										{% endif %}
+									
+							{% else: %}
+							<!-- ACTIVAR USUARIO -->
+							<div class="col py-1">
+								<button id="btn-activar-usuario" name="btn-activar-usuario"
+									type="submit" class="btn btn-success p-0 m-0"
+									style="font-size: .85rem;"
+									id-usuario="{{rmov['id']}}">Activar
+								</button>
+							</div>
+							{% endif %}
+						</div>
+					</div>
+				</td>
+		</tr>
+		{% endfor %}
+
+		</tbody>
+		</table>
+
+		<button id="btn-add-user-modal" name="btn-add-user-modal" type="button" class="btn btn-success p-0 m-0"
+			style="width:2.2rem;height:2.2rem;">
+			<img src="{{ url_for('static', filename='icons_svg/add-user.svg') }}" alt="Agregar Usuario"
+				class="img inline p-0 m-0" style="width:1.9rem;height:1.5rem;" title="Agregar Usuario">
+		</button>
+
+		<!-- MODAL PARA CONFIRMACION DE MODIFICAR USUARIO-->
+		<div class="modal fade" id="modal-crud-user" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+			aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title text-primary" style="font-size:1.3rem" id="modal-crud-user-titulo">
+						</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+
+						<label id="modal-crud-user-body" class="text-primary my-0" style="font-size:1.2rem"></label>
+						<input id="modal-crud-user-id" name="modal-crud-user-id" type="hidden">
+						<input id="modal-crud-user-accion" name="modal-crud-user-accion" type="hidden">
+						<input id="modal-crud-user-datos" name="modal-crud-user-datos" type="hidden" value="0">
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+						<button id="modal-crud-user-btn" class="btn btn-primary">Confirmar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+		<!-- MODAL PARA AGREGAR USUARIO-->
+		<div class="modal fade" id="modal-crud-user-add" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+			aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title text-primary" style="font-size:1.3rem" id="modal-crud-user-add-titulo">
+							Agregar Usuario</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<p class="text-primary" style="font-size:0.85rem">Datos del nuevo usuario</p>
+						<div class="form-row my-0 py-0">
+							<div class="form-group col-5 my-0 py-0">
+								<label class="text-primary my-0 py-0" style="font-size:1rem"
+									for="nombres"><b>Nombres</b></label>
+							</div>
+							<div class="form-group col-7 my-0 py-0">
+								<label class="text-primary my-0 py-0" style="font-size:1rem"
+									for="apellidos">Apellidos</label>
+							</div>
+						</div>
+						
+						<div class="form-row my-0 py-0">
+							<div class="form-group col-5 my-0 py-0">
+								<input class="form-control form-control-sm my-0 py-0"
+									style="font-size:1rem" type="text" name="nuevo-usuario-nombres" id="nuevo-usuario-nombres"
+									placeholder="Nombres">
+							</div>
+							<div class="form-group col-7 my-0 py-0">
+								<input class="form-control form-control-sm my-0 py-0" style="font-size:1rem" type="text"
+									name="nuevo-usuario-apellidos" id="nuevo-usuario-apellidos" placeholder="Apellidos">
+							</div>
+						</div><br>
+						<div class=" form-row my-0 py-0">
+							<div class="form-group col-5 my-0 py-0">
+								<label class="text-primary my-0 py-0" style="font-size:1rem"
+									for="nivel"><b>Nivel</b></label>
+							</div>
+							<div class="form-group col-7 my-0 py-0">
+								<label class="text-primary my-0 py-0" style="font-size:1rem" for="correo">Correo</label>
+							</div>
+						</div>
+						<div class="form-row my-0 py-0">
+							<div class="form-group col-5 my-0 py-0">
+								<select name="nuevo-usuario-nivel" id="nuevo-usuario-nivel"
+									class="form-control chosen-select mx-0 px-0">
+									<option value="" disabled>Selecione el Nivel</option>
+									<option value="2">Operador N1</option>
+									<option value="3">Operador N2</option>
+									<option value="1">Administrador</option>
+								</select>
+							</div>
+							<div class="form-group col-7 my-0 py-0">
+								<input class="form-control form-control-sm my-0 py-0" style="font-size:1rem" type="text"
+									name="nuevo-usuario-correo" id="nuevo-usuario-correo" placeholder="Correo">
+							</div>
+						</div>
+						<div class="collapse" id="datos-nuevo-usuario">
+						</div>
+					</div>
+					<div class="modal-footer">
+						<div class="container">
+							<div class="row ">
+								<div class="col-7 ">
+									<div id="usuario-guardar-alerta" class="alert alert-danger" role="alert"
+										style="font-size:0.85rem;display: none;">
+									</div>
+								</div>
+								<div class="col-5" style="text-align: right;">
+									<button id="modal-crud-user-btn-cerrar" name="modal-crud-user-btn-cerrar" type="button" class="btn btn-secondary" data-dismiss="modal"
+										style="display: inline-block;">Cerrar</button>
+									<button id="modal-crud-user-btn-crear" name="modal-crud-user-btn-crear" type="button" class="btn btn-primary">Crear</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</div>
+</div>
+
+{% endblock %}

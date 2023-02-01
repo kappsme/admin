@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='login_files/favicon.ico') }}">
+    <title>KAPP: {{session['kapp']}}</title>
+    <script type=text/javascript>
+        $SCRIPT_ROOT = {{ request.script_root | tojson | safe }};
+    </script>
+
+    <!-- FUENTES LOCALES-->
+    <style type="text/css">
+        @font-face {
+            font-family: 'Open Sans';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: local('Open Sans Regular'),
+            local('OpenSans-Regular'),
+            url("{{url_for('static', filename='fonts/mem8YaGs126MiZpBA-UFVZ0b.woff2')}}") format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
+        @font-face {
+            font-family: 'Open Sans';
+            font-style: normal;
+            font-weight: 700;
+            font-display: swap;
+            src: local('Open Sans Bold'),
+            local('OpenSans-Bold'),
+            url("{{url_for('static', filename='fonts/mem5YaGs126MiZpBA-UN7rgOUuhp.woff2')}}") format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+    </style>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='reset.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='bs441/css/bootstrap.spacelab.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='chosen.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='inventario.css') }}" />
+    <script type=text/javascript src="{{ url_for('static', filename='jquery-3.5.1.js') }}"></script>
+    <script type=text/javascript src="{{ url_for('static', filename='bs453/js/bootstrap.bundle.js') }}"></script>
+    <script type=text/javascript src="{{ url_for('static', filename='js/masks.js') }}"></script>
+    <script type=text/javascript src="{{ url_for('static', filename='js/biblioteca.js') }}"></script>
+    <script type=text/javascript src="{{ url_for('static', filename='js/biblioteca2.js') }}"></script>
+    <script type=text/javascript src="{{ url_for('static', filename='js/reportes.js') }}"></script>
+
+</head>
+
+<body>
+
+
+    <!-- Bloqueo de Pagina de espera -->
+    <div id="espera">
+        <button class="btn btn-primary" type="button" style="position: absolute;left: 45%;top: 35%" disabled>
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Por Favor Espere...
+        </button>
+    </div>
+
+    <input id="id-tipo-display" name="id-tipo-display" type="hidden" value={{tipo_display}}>
+    <input id="saldo-i" type="hidden" value={{saldo}}>
+    <input id="saldo-cotizacion" type="hidden" value={{ saldo_cotizacion }}>
+    <input id="saldo-repuestos" type="hidden" value={{ saldo_repuestos }}>
+
+    <div class="container-fluid border">
+        {% if session['ambiente']=='PRODUCCION': %}
+        <div class="row bg-primary border ">
+            {% else: %}
+            <div class="row bg-warning">
+                {% endif %}
+
+                <!-- NOMBRE ELECTRONICA TORRES -->
+                <div class="col-7 col-md-3">
+                    <div class="row justify-content-xs-start justify-content-md-center">
+                        <p class="p py-1 my-0 text-white" style="font-size:26px;">
+                            {{session['kapp']}}
+                        </p><br>
+                        <small style="font-size:.8rem; color: white; "> KAPPS.me - {{session['clave']}}
+                            {% if session['ambiente']!='PRODUCCION': %}
+                            PRUEBAS
+                            {% endif %} -
+                            <em>{{ session['username'] }}</em>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- BOTONES ( HERRAMIENTAS / LOGOUT)-->
+                <div class="col-5 col-md-2 order-md-last">
+                    <div class="container-fluid p-0 m-0 py-1">
+                        <div class="row justify-content-end no-gutters">
+                            <button style="height:3rem ;width:3rem" type="button" class="btn btn-primary m-1 p-0 py-1"
+                                onclick="openNav()">
+                                <img src="{{ url_for('static', filename='icons_svg/gear.svg') }}" alt="Configurar"
+                                    width="30" height="30" title="Configurar">
+                            </button>
+                            <form action="{{ url_for('logout') }}" id="out" name="out">
+                                <button type="submit" class="btn btn-primary m-1 p-0 py-1"
+                                    style="float:left;height:3rem ;width:3rem">
+                                    <img src="{{ url_for('static', filename='icons_svg/exit.svg') }}" alt="Salir"
+                                        width="30" height="30" title="Salir">
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MENU APPS -->
+                <div class="col-12 col-md-3">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <!-- HOME TALLER -->
+
+                            <form action="{{ url_for('home') }}" method="POST" id="home" name="home">
+                                <button type="submit" class="btn btn-primary p-1 m-2 px-0 mx-0"
+                                    style="height:3rem ;width:3rem">
+                                    <img font-color="white"
+                                        src="{{ url_for('static', filename='icons_svg/taller.svg') }}" alt="Inicio"
+                                        width="30" height="30" title="Inicio">
+                                </button>
+                            </form>
+
+                            <!-- TIENDA -->
+                            <form action="{{ url_for('tnd') }}" method="POST" id="tienda" name="tienda">
+                                <input type="hidden" id="tienda-accion" name="tienda-accion" value=1>
+                                <button type="submit"
+                                    class="btn {% if tienda_accion: %} btn-success {% else: %} btn-primary {% endif %} p-1 m-2 px-0 mx-0"
+                                    style="height:3rem ;width:3rem">
+                                    <img font-color="white"
+                                        src="{{ url_for('static', filename='icons_svg/caja-registradora.svg') }}"
+                                        alt="Inicio" width="30" height="30" title="Inicio">
+                                </button>
+                            </form>
+                            <!-- TIENDA ONLINE 
+                        <form action="{{ url_for('home') }}" method="POST" id="tienda-online" name="tienda-online">
+                            <button type="submit" class="btn btn-primary p-1 m-2 px-0 mx-0" style="height:3rem ;width:3rem">
+                                <img font-color="white"
+                                    src="{{ url_for('static', filename='icons_svg/tienda-online.svg') }}"
+                                    alt="Inicio" width="30" height="30" title="Inicio">
+                            </button>
+                        </form>
+                        -->
+                            <!-- INVENTARIO ONLINE -->
+                            <form action="{{ url_for('inv') }}" method="POST" id="inventario" name="inventario">
+                                <input type="hidden" id="inv-accion" name="inv-accion" value=1>
+                                <button type="submit"
+                                    class="btn {% if inv_accion: %} btn-success {% else: %} btn-primary {% endif %} p-1 m-2 px-0 mx-0"
+                                    style="height:3rem ;width:3rem">
+                                    <img font-color="white"
+                                        src="{{ url_for('static', filename='icons_svg/inventario.svg') }}"
+                                        alt="Inventario" width="30" height="30" title="Inventario">
+                                </button>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MENU BOLETAS -->
+                <div class="col-12 col-md-4">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <!-- NUEVA BOLETA -->
+
+                            <form action="{{ url_for('nueva') }}" method="POST" id="nueva" name="nueva">
+                                <button type="submit" class="btn btn-primary btn-block py-1 my-2 px-0 mx-0"
+                                    style="height:3rem; ">Nueva Boleta</button>
+                            </form>
+                            <!-- BUSCAR BOLETA-->
+                            <form id='form-buscar-boleta' class="form-inline" method="POST"
+                                action="{{ url_for('boleta1') }}">
+                                <input id="id-boleta" name="id-boleta" class="form-control p-1 my-2 mr-0 ml-1"
+                                    placeholder="Boleta" aria-label="Search" type="number"
+                                    style="font-size:1.5rem;height:3rem;width:6rem;border-radius: 7px;" required>
+                                <input type="hidden" value=0 id="tipo-display" class="fosrm-control"
+                                    name="tipo-display">
+                                <button type="submit" class="btn btn-primary btn-sm p-0 my-2 mx-0"
+                                    style="height:3rem ;width:3rem">
+                                    <img src="{{ url_for('static', filename='icons_svg/search.svg') }}" alt="Buscar"
+                                        width="25" height="25" title="Buscar">
+                                </button>
+                            </form>
+
+                            <!-- BUSQUEDA AVANZADA-->
+
+                            <form method="POST" action="{{ url_for('busqueda') }}">
+                                <button type="submit" class="btn btn-primary p-1 m-2 px-0 mx-0"
+                                    style="height:3rem ;width:3rem">
+                                    <img src="{{ url_for('static', filename='icons_svg/search2.svg') }}"
+                                        alt="Búsqueda Avanzada" width="35" height="45" title="Búsqueda Avanzada">
+                                </button>
+                                <input type="hidden" name="tipo_busqueda" value=1>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BUSCAR BOLETA INCOGNITO-->
+                <form id='form-buscar-boleta-i' method="POST" action="{{ url_for('boleta2') }}">
+                    <input type="hidden" id="id-boleta-i" name="id-boleta-i">
+                    <input type="hidden" id="tipo-display-i" name="tipo-display-i">
+                </form>
+            </div>
+            <div class="row">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+
+        <!-- MENU SIDEBAR-->
+        <div id="mySidenav" class="sidenav">
+            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+
+            <!--FORMULARIO REPORTERIA-->
+            <form id="frm-reporte-inicio" method="POST" action="{{ url_for('reportes') }}">
+                <input type="number" id="tipo-reporte" name="tipo-reporte" hidden>
+                <input type="number" id="tipo-accion" name="tipo-accion" hidden>
+                <input type="number" id="tipo-accion2" name="tipo-accion2" value=0 hidden>
+                <input type="date" id="fecha-inicio" name="fecha-inicio" hidden>
+                <input type="date" id="fecha-fin" name="fecha-fin" hidden>
+            </form>
+            <!--FORMULARIO CATALOGOS-->
+            <form id="frm-catalogo" method="POST" action="{{ url_for('crud_catalogo') }}">
+                <input type="number" id="tipo-catalogo" name="tipo-catalogo" hidden>
+                <input type="number" id="tipo-accion-catalogo" name="tipo-accion-catalogo" hidden>
+                <input type="text" id="catalogo-parametro" name="catalogo-parametro" hidden>
+            </form>
+
+
+            <div id="accordion">
+
+                <div class="card">
+                    <div class="card-header m-0 p-1 collapsed" id="headingOne"
+                        style="height: 2.3rem;background-color: rgba(4, 20, 51, 0.945);" data-toggle="collapse"
+                        data-target="#collapseOnex" aria-expanded="false" aria-controls="collapseOnex">
+                        <h5> Reportes </h5>
+                    </div>
+                </div>
+                <div id="collapseOnex" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+                    <div class="card-body">
+                        <button id="btn-reporte-inicio" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                            style="height:3rem ;width:5rem">
+                            Pagos
+                        </button>
+                        <button id="btn-reporte-iniciof" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                            style="height:3rem ;width:5rem">
+                            Facturación
+                        </button>
+                        <br>
+                        <button id="btn-reporte-inicio-boletas" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                            style="height:3rem ;width:5rem">
+                            Boletas
+                        </button>
+                        <button id="btn-reporte-inicio-tiempos" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                            style="height:3rem ;width:5rem">
+                            Tiempos
+                        </button>
+                        <br>
+                        <button id="btn-reporte-inicio-ventas" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                            style="height:3rem ;width:5rem">
+                            Ventas
+                        </button>
+                        <button id="btn-reporte-inicio-liquidaciones-detalle" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                            style="height:3rem ;width:5rem">
+                            Liquidaciones
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header m-0 p-1 collapsed" id="headingTwo"
+                    style="height: 2.3rem;background-color: rgba(4, 20, 51, 0.945);" data-toggle="collapse"
+                    data-target="#collapseTwox" aria-expanded="false" aria-controls="collapseTwox">
+                    <h5> Catálogos </h5>
+                </div>
+            </div>
+            <div id="collapseTwox" class="collapse" aria-labelledby="headingTwox" data-parent="#accordion">
+                <div class="card-body">
+                    <button id="btn-catalogo-zonas" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                        style="height:3rem ;width:7rem">
+                        ZONAS
+                    </button>
+                    <button id="btn-catalogo-marcas" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                        style="height:3rem ;width:7rem">
+                        MARCAS
+                    </button>
+                    <br>
+                    <button id="btn-catalogo-equipos" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                        style="height:3rem ;width:7rem">
+                        TIPOS EQUIPO
+                    </button>
+                    <button id="btn-catalogo-repuestos" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                        style="height:3rem ;width:7rem">
+                        REPUESTOS
+                    </button>
+                    <button id="btn-catalogo-proveedores" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                        style="height:3rem ;width:7rem">
+                        PROVEEDORES
+                    </button>
+                </div>
+            </div>
+            {% if session['nivel']==1: %}
+            <!--FORMULARIO USUARIOS ADMIN-->
+            <form id="frm-usuarios" name="frm-usuarios" method="POST" action="{{ url_for('usuarios') }}">
+
+                <div class="card">
+                    <div class="card-header m-0 p-1 collapsed" id="headingTwo"
+                        style="height: 2.3rem;background-color: rgba(4, 20, 51, 0.945);" data-toggle="collapse"
+                        data-target="#collapse3x" aria-expanded="false" aria-controls="collapse3x">
+                        <h5> Usuarios </h5>
+                    </div>
+                </div>
+                <div id="collapse3x" class="collapse" aria-labelledby="heading3x" data-parent="#accordion">
+                    <div class="card-body">
+                        <button id="btn-usuarios-admin" class="btn btn-primary btn-sm p-0 my-2 mx-1" type="submit"
+                            style="height:3rem ;width:7rem">
+                            Administrar
+                        </button>
+                        <input type="hidden" id="accion" name="accion" value=1>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+
+            <!-- INVENTARIO -->
+            <div class="card">
+                <div class="card-header m-0 p-1 collapsed" id="headingTwo"
+                    style="height: 2.3rem;background-color: rgba(4, 20, 51, 0.945);" data-toggle="collapse"
+                    data-target="#collapse4x" aria-expanded="false" aria-controls="collapse4x">
+                    <h5> Inventario </h5>
+                </div>
+            </div>
+            <div id="collapse4x" class="collapse" aria-labelledby="headingTwox" data-parent="#accordion">
+                <div class="card-body">
+                    <button id="btn-rep-inicio-inv-existencias" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                        style="height:3rem ;width:7rem">
+                        EXISTENCIAS
+                    </button>
+                    {% if session['nivel']==1: %}
+                    <!-- LIQUIDACION -->
+                    <button id="btn-rep-inicio-inv-liquidacion" class="btn btn-primary btn-sm p-0 my-2 mx-1"
+                        style="height:3rem ;width:7rem">
+                        LIQUIDACION
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!--Modal EDITAR CLIENTE-->
+        <div class="modal fade bd-example-modal" id="modal_editar_cliente" tabindex="-1" role="dialog"
+            aria-labelledby="mySmallModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title text-primary" style="font-size:1.4rem" id="titulo_modal">
+                            Editar Cliente</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body" style="width: 30rem;">
+
+
+                        <div class="form-row my-0">
+                            <div class="form-group col-sm-5 my-0"><label class="text-primary my-0"
+                                    style="font-size:1rem" for="nombres">Nombres</label>
+                                <input class="form-control form-control-sm" style="font-size:1rem" type="text"
+                                    name="nombres2" id="nombres2" placeholder="Nombres">
+                            </div>
+                            <div class="form-group col-sm-7 my-0">
+                                <label class="text-primary my-0" style="font-size:1rem"
+                                    for="apellidos">Apellidos</label>
+                                <input class="form-control form-control-sm" style="font-size:1rem" type="text"
+                                    name="apellidos2" id="apellidos2" placeholder="Apellidos">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-row my-0">
+                            <div class="form-group col-sm-4 my-0">
+                                <label class="text-primary my-0" style="font-size:1rem" for="codigo">Tipo
+                                    Cliente</label>
+                                <select class="form-control form-control-sm" id="tipo-cliente2">
+                                    <option value=1>Natural</option>
+                                    <option value=2>Jurídico</option>
+                                    <option value=3>Exhonerado</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-sm-8 my-0">
+                                <label class="text-primary my-0" style="font-size:1rem" for="correo2">Correo
+                                    Electrónico</label>
+                                <input class="form-control form-control-sm" style="font-size:0.9rem" type="email"
+                                    name="correo2" id="correo2" placeholder="Correo Electronico">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-row my-0">
+                            <div class="form-group col-4 my-0"><label class="text-primary my-0" style="font-size:1rem"
+                                    for="codigo">Teléfono 1</label>
+                                <input class="form-control form-control-sm" style="font-size:0.95rem" type="number"
+                                    name="telefono12" id="telefono12" placeholder="Telefono">
+                            </div>
+                            <div class="form-group col-4 my-0"><label class="text-primary my-0" style="font-size:1rem"
+                                    for="codigo">Teléfono 2</label>
+                                <input class="form-control form-control-sm" style="font-size:0.95rem" type="number"
+                                    name="telefono22" id="telefono22" placeholder="Telefono">
+                            </div>
+                            <div class="form-group col-4 my-0"><label class="text-primary my-0" style="font-size:1rem"
+                                    for="codigo">Teléfono 3</label>
+                                <input class="form-control form-control-sm" style="font-size:0.95rem" type="number"
+                                    name="telefono23" id="telefono32" placeholder="Telefono">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="form-row my-0">
+                            <div class="form-group col-5 my-0">
+                                <label class="text-primary my-0 py-0" style="font-size:1rem">Provincia</label>
+                                <select class="form-control form-control-sm" id="provincia2" style="font-size:1rem;">
+                                    <option value=1>Alajuela</option>
+                                    <option value=2>Heredia</option>
+                                    <option value=3>San José</option>
+                                    <option value=4>Puntarenas</option>
+                                    <option value=5>Cartago</option>
+                                    <option value=6>Guanacaste</option>
+                                    <option value=7>Limón</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-7 my-0">
+                                <label class="text-primary my-0 py-0" style="font-size:1rem">Zona</label><br>
+                                <div class="autocomplete">
+                                    <input class="form-control form-control-sm px-1 mx-0" style="font-size:1rem"
+                                        type="text" name="zona2" id="zona2" placeholder="Zona" maxlength="25"
+                                        value="Alajuela">
+                                </div>
+                                {% if z: %}
+                                <script>
+                                    var zonas = [{% for z in zonas %}
+                                    "{{z.nombre}}",
+                                        {% endfor %}
+                                    ""
+                                    ];
+                                </script>
+                                {% endif %}
+                            </div>
+                        </div>
+
+
+                        <br>
+                        <div id="guardar-alerta2" class="alert alert-danger m-1 p-1" role="alert"
+                            style="font-size:0.85rem" hidden>
+                        </div>
+
+                    </div>
+
+                    <input id="tipo_accion_cliente" name="tipo_accion_cliente" type="hidden" value=1>
+                    <br>
+                    <div id="nuevo_cliente_alerta"></div>
+                    </form>
+
+                    <div class="modal-footer">
+                        <input type="button" class="btn btn-secondary" data-dismiss="modal" value="Cerrar" />
+                        <input type="button" class="btn btn-primary" id="btn-actualizar-cliente"
+                            name="btn-actualizar-cliente" value="Guardar" />
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!--Modal INGRESO DE NUEVO ELEMENTO (MARCA/TIPOEQUIPO/ZONA/REPUESTO) -->
+        <div class="modal fade bd-example-modal" id="modal-ingreso-elemento" tabindex="-1" role="dialog"
+            aria-labelledby="mySmallModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <img src="{{ url_for('static', filename='icons_svg/warning.svg') }}" alt="" class="img inline"
+                            style="width:2rem;height:2rem;" title="">
+                        <h5 class="modal-title text-primary" style="font-size:1.4rem"
+                            id="modal-ingreso-elemento-header">
+                        </h5>
+                    </div>
+                    <div class="modal-body">
+                        <br><br>
+                        <label id="modal-ingreso-elemento-label" class="text-primary my-0" style="font-size:1.3rem">
+                        </label>
+                        <br>
+                        <br>
+                        <input id="modal-ingreso-elemento-accion" type="hidden">
+                        <input id="modal-ingreso-elemento-valor" type="hidden">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            id="cerrar-modal-pago">Cerrar</button>
+                        <button id="btn-ingreso-elemento-confirmacion" class="btn btn-primary">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL PARA CONFIRMAR ENVIO DE CORREO (YA SE ENVIO)-->
+        <div class="modal fade" id="modal-movimiento-correo-enviado" tabindex="-1" role="dialog"
+            aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-primary" style="font-size:1.3rem" id="modal-anularm-titulo">
+                            Correo enviado</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+
+                        <label id="modal-anularm-body" class="text-primary my-0" style="font-size:1.2rem">El
+                            correo
+                            ha
+                            sido enviado</label>
+                        <label id="modal-anularm-body" class="text-primary my-0" style="font-size:0.85rem">Si el
+                            correo
+                            proporcionado está correcto, debería recibirse dentro de un minuto
+                            apróximadamente.</label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal"
+                            id="cerrar-modal-pago">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- MODAL PARA CONFIRMAR PAGOS-->
+    <div class="modal fade" id="pagoModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary" style="font-size:0.9rem" id="exampleModalLabel">Registrar Pago
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <label id="modal-pago-confirmacion" class="text-primary my-0" style="font-size:1.2rem">Confirmar
+                        Pago de Boleta {{id_boleta}}</label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                        id="cerrar-modal-pago">Cerrar</button>
+                    <button id="boton-confirmar-pago" type="submit" class="btn btn-primary">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA CONFIRMAR CARGOS-->
+    <div class="modal fade" id="cargoModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary" style="font-size:0.9rem">
+                        Registrar Cargo Boleta {{id_boleta}}
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <label id="modal-cargo-confirmacion" class="text-primary my-0" style="font-size:1.2rem" for="serie">
+                    </label>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                        id="cerrar-modal-cargo">Cerrar</button>
+                    <button id="boton-confirmar-cargo" type="submit" class="btn btn-primary">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--Modal VER VENTA DETALLE -->
+    <div class="modal fade bd-example-modal" id="modal-venta" tabindex="-1" role="dialog"
+        aria-labelledby="mySmallModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-body" id="modal-venta-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--Modal DEVOLUCION VENTA-->
+    <div class="modal fade bd-example-modal" id="modal-venta-devolucion" tabindex="-1" role="dialog"
+        aria-labelledby="mySmallModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary" style="font-size:1.4rem">
+                        Devolución de Producto
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Ingrese los siguientes datos para poder efectuar la devolución<br></p>
+                    <p id="lbl-venta-devolucion-producto"></p>
+                    <div class="row align-items-center p-1">
+                        <div class="col-3">
+                            <label class="text-primary" for="venta-devolucion-unidedes"><b>Unidades</b></label>
+                        </div>
+                        <div class="col-9">
+                            <select class="form-control" type="number" name="venta-devolucion-unidedes"
+                                id="venta-devolucion-unidades">
+                                <option value=0>0</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row align-items-center p-1">
+                        <div class="col-3">
+                            <label class="text-primary" for="venta-devolucion-ajuste"><b>Ajuste en
+                                    Inventario</b></label>
+                        </div>
+                        <div class="col-9">
+                            <select class="form-control" id="venta-devolucion-ajuste" name="venta-devolucion-ajuste">
+                                <option value=1>Si</option>
+                                <option value=2>No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row align-items-center p-1">
+                        <div class="col-12 col-sm-3">
+                            <label class="text-primary"
+                                for="venta-devolucion-justificacion"><b>Justificación</b></label>
+                        </div>
+                        <div class="col-12 col-sm-9">
+                            <textarea class="form-control" rows=5 name="venta-devolucion-justificacion"
+                                id="venta-devolucion-justificacion" maxlength="150"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <label id="venta-devolucion-alerta" class="text-danger p-3"
+                        style="font-size:0.9rem;display: none;">X</label>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    <button id="venta-devolucion-confirmacion" class="btn btn-primary">Confirmar</button>
+                    <input type="hidden" id="venta-devolucion-id-venta" value=0>
+                    <input type="hidden" id="venta-devolucion-codigo-producto" value=0>
+                    <input type="hidden" id="venta-devolucion-id-estado" value=0>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--MODAL NOTIFICACION-->
+    <div class="modal fade" id="modal-notificacion" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary" style="font-size:1.4rem" id="modal-notificacion-titulo">
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-3">
+                            <img src="{{ url_for('static', filename='icons_svg/alerta.svg') }}" alt="Alerta" width="50"
+                                height="50" title="Alerta">
+                        </div>
+                        <div class="col">
+                            <label class="text-primary" id="modal-notificacion-mensaje"></label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" data-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NOTIFICACIONES-->
+    <div class="modal fade" id="modalNotificacion" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+
+                    <div class="row">
+                        <div class="col-4">
+                            <img id="modalNotificacion-imagen1"
+                                src="{{ url_for('static', filename='icons_svg/approve.svg') }}"
+                                style="width:3rem;height:3rem;" hidden>
+                            <img id="modalNotificacion-imagen2"
+                                src="{{ url_for('static', filename='icons_svg/reprove.svg') }}"
+                                style="width:3rem;height:3rem;" hidden>
+                            <img id="modalNotificacion-imagen3"
+                                src="{{ url_for('static', filename='icons_svg/alerta.svg') }}"
+                                style="width:3rem;height:3rem;" hidden>
+                        </div>
+                        <div class="col-8">
+                            <label id="modalNotificacion-mensaje" class="text-primary my-0" style="font-size:1.2rem">
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button id="modalNotificacion-btnOk" data-dismiss="modal" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

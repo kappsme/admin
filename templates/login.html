@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>KAPPS.me</title>
+	<meta charset="utf-8">
+	<script type=text/javascript>
+        $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+    </script>
+	<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, shrink-to-fit=no">
+	<link rel="icon" type="image/png" href="{{ url_for('static', filename='login_files/favicon.ico') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='login_files/material-design-iconic-font.min.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='login_files/util.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='login_files/main.css') }}">
+
+</head>
+
+<body>
+
+	<div class="limiter">
+		<div class="container-login100">
+			<div class="wrap-login100">
+
+				<form class="login100-form validate-form" action="{{ url_for('login') }}" method="post" id="ingreso"
+					name="ingreso">
+					<span class="login100-form-title p-b-26">
+						KAPPS.me
+					</span>
+					<span class="login100-form-title p-b-40">
+						<p style="font-size: 5rem;">ET</p>
+					</span>
+
+					<div class="wrap-input100 validate-input" data-validate="No debe Estar Vacío">
+						<input class="input100" type="text" name="username" id="username">
+						<span class="focus-input100" data-placeholder="Usuario"></span>
+					</div>
+
+					<div class="wrap-input100 validate-input" data-validate="Ingrese la Contraseña">
+						<span class="btn-show-pass">
+							<i class="zmdi zmdi-eye"></i>
+						</span>
+						<input class="input100" type="password" name="password" id="password">
+						<span class="focus-input100" data-placeholder="Contraseña"></span>
+					</div>
+					{% if msg: %}
+					<div style="color: rgb(219, 42, 42);">{{ msg | safe }}</div>
+					{% endif %}
+					<br>
+					<div class="container-login100-form-btn">
+						<div class="wrap-login100-form-btn">
+							<div class="login100-form-bgbtn"></div>
+							<button class="login100-form-btn" type="submit" form="ingreso">
+								Ingresar
+							</button>
+						</div>
+					</div>
+				</form>
+
+				<div class="text-center p-t-115">
+					<a id="link-recuperar-password" class="txt2" href="#">
+						Recuperar Contraseña
+					</a>
+				</div>
+
+
+			</div>
+		</div>
+	</div>
+
+	<!-- MODAL PARA CONFIRMACION PARA RECUPERAR CONTRASENA -->
+	<div class="modal fade" id="modal-recuperar-password" tabindex="-1" role="dialog"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title text-primary" style="font-size:1.2rem" id="modal-recuperar-password-header">
+						Recuperar Contraseña</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div class="container-fluid">
+						<div id="collapseMain" class="collapseMain">
+							<div class="row">
+								<label id="modal-recuperar-password-label1" class="text-primary my-0"
+									style="font-size:.95rem">
+									Por favor ingrese su usuario y presione el botón para verificar<br>
+								</label><br><br>
+								<div class="col-6">
+									<input id="username_r" type="text" class="wrap-input100">
+								</div>
+								<div class="col-6">
+									<button id="btn-verificar-usuario" class="btn btn-primary btn-sm">Verificar</button>
+								</div>
+							</div>
+							<div class="row" style="height: 3rem;">
+								<div class="col-2">
+									<img id="check-nok-etga" class="img py-0 my-0"
+										src="{{ url_for('static', filename='icons_svg/reprove.svg') }}"
+										style="float:right;width:1.3rem;height:1.3rem;" hidden>
+									<img id="check-ok-etga" class="img py-0 my-0"
+										src="{{ url_for('static', filename='icons_svg/approve.svg') }}"
+										style="float:right;width:1.3rem;height:1.3rem;" hidden>
+								</div>
+								<div class="col-10">
+									<label id="lbl-recuperar-password-verificar" class="text-danger my-0"
+										style="font-size:.85rem">
+									</label>
+								</div>
+							</div>
+						</div>
+						<div class="collapseCorreo" id="collapseCorreo" hidden>
+							<div class="row" id="recuperar-password-seccion-mail">
+								<div class="col-12">
+									<label id="lbl-recuperar-password-verificar2" class="text-primary my-0"
+										style="font-size:.85rem">
+									</label>
+								</div><br>
+								<div class="col-10">
+									<input id="correo_r" type="text" class="wrap-input100 mx-1">
+								</div>
+								<div class="col-2">
+									<button id="btn-recuperar-password-correo" class="btn btn-primary btn-sm">Enviar
+									</button>
+								</div>
+								<label id="lbl-recuperar-password-verificar3" class="text-danger my-0"
+									style="font-size:.85rem">
+								</label>
+							</div>
+						</div>
+					</div>
+					<div class="collapseDatos" id="collapseDatos" id="recuperar-password-datos" hidden>
+						<div id="s1">
+							<label class="text-primary my-0" style="font-size:.95rem">
+								Por favor ingrese el código en el campo y presione el número de botón correcto.<br>Esta
+								información fue enviada a su correo electrónico.
+							</label><br><br><br>
+							<div class="row">
+								<div class="col-4">
+									<div class="wrap-input100 validate-input" data-validate="No debe Estar Vacío">
+										<input type="text" name="dato-codigo" id="dato-codigo">
+										<span class="focus-input100" data-placeholder="Código"></span>
+									</div>
+								</div>
+								<div class="col-8">
+									Botón:
+									<button id="dato-btn" name="dato-btn" value=1
+										class="btn btn-primary btn-sm">1</button>
+									<button id="dato-btn" name="dato-btn" value=2
+										class="btn btn-success btn-sm">2</button>
+									<button id="dato-btn" name="dato-btn" value=3
+										class="btn btn-warning btn-sm">3</button>
+								</div>
+							</div>
+						</div>
+						<label id="lbl-recuperar-password-verificar4" class="text-danger my-0" style="font-size:.85rem">
+						</label>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<div id="guardar-cambio-estado-alerta" class="alert alert-danger m-1 p-1" role="alert"
+						style="font-size:0.8rem" hidden>
+					</div>
+					<button type="button" class="btn btn-secondary" data-dismiss="modal"
+						id="cerrar-modal-pago">Cerrar</button>
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<form action="{{ url_for('crud_usuario') }}" method="POST" id="redirect">
+	</form>
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='bs441/css/bootstrap.min.css') }}">
+	<script type="text/javascript" src="{{ url_for('static', filename='jquery-3.4.1.min.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='bs441/js/bootstrap.min.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='login_files/main.js') }}"></script>
+
+
+
+</body>
+
+</html>

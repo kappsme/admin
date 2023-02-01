@@ -9,7 +9,7 @@ services:
     volumes:
       - .:/app/codigo
     working_dir: /app/codigo
-    entrypoint: [ "bash", "-c", "python3 main.py"]
+    #entrypoint: [ "bash", "-c", "python3 main.py"]
   kappsdb:
     image: mysql:5.7.40
     env_file:
