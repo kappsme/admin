@@ -5,7 +5,7 @@ from datetime import datetime
 import string
 import os
 import re
-import main
+from main import DBConn
 from dotenv import load_dotenv
 
 # ENV Variables
@@ -16,9 +16,10 @@ load_dotenv('../.env-admin')
 cadena_password = os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN')
 cadena_password_admin = os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN_ADMIN')
 
-def klogout(mysql, msg):
+def klogout(msg):
     # Quita Token de Seguridad
     print("QUITANDO TOKEN ....")
+    mysql=DBConn()
     cursor = mysql.cursor()
     if "id" in session:
         cursor.execute(
@@ -34,13 +35,14 @@ def klogout(mysql, msg):
     session.pop("impresiones", None)
     session.pop("ambiente", None)
     session.pop("username", None)
-    mysql.commit()
     cursor.close()
+    mysql.close()
     # Redirect to login page
     return render_template("login.html", msg=msg)
 
 
-def klogin(mysql, aplication_id):
+def klogin(aplication_id):
+    # print(">>> KLogin 1")
     if (
         request.method == "POST"
         and "username" in request.form
@@ -49,6 +51,8 @@ def klogin(mysql, aplication_id):
         # Create variables for easy access
         username = request.form["username"]
         password = request.form["password"]
+        # print(">>> KLogin 1-2")
+        mysql=DBConn()
         cursor = mysql.cursor()
         cursor.execute("SET session time_zone = '-6:00'")
         cursor.execute(
@@ -56,13 +60,16 @@ def klogin(mysql, aplication_id):
                 AND ((kapp_id= %s and aes_decrypt(password2,UNHEX(SHA2(%s,512))) = %s) OR (kapp_id=0 and aes_decrypt(password2,UNHEX(SHA2(%s,512))) = %s))",
             (username, aplication_id, cadena_password, password,cadena_password_admin, password ),
         )
-        account = cursor.fetchone()
+        account = dict(zip(cursor.column_names, cursor.fetchone()))
+        print("account: " + str(account))
         # If account exists in accounts table in out database
         if account:
+            print(">>> KLogin 1-2X")
+            print(account)
+            
             # Verifica si tiene Bloqueo
-            if int(account[cursor.column_names.index('bloqueo')]) == 1:
+            if int(account['bloqueo']) == 1:
                 return klogout(
-                    mysql,
                     msg="<b>Usuario Bloqueado</b<br>Por favor, comuníquese con su Administrador",
                 )
             # Verifica LOGGED IN
@@ -70,9 +77,14 @@ def klogin(mysql, aplication_id):
                 "select timestampdiff(second,ultimo_request,sysdate()) duracion_session, ac.vigencia, token \
             from kapps_db.accounts_log log left join kapps_db.accounts ac on ac.id=log.id_account \
             where id_account=%s",
-                [account[cursor.column_names.index('id')]],
+                [account['id']],
             )
-            resultado = cursor.fetchone()
+            resultado=cursor.fetchone()
+            resultado = dict(zip(cursor.column_names, resultado)) if cursor.rowcount >= 0 else None
+            # print(cursor.statement)
+            # print(cursor.rowcount)
+            
+
             if (
                 resultado is None
                 or resultado["duracion_session"] > resultado["vigencia"]
@@ -83,8 +95,8 @@ def klogin(mysql, aplication_id):
                 # Create session data, we can access this data in other routes
                 session["token"] = token
                 # session['token_new'] = True
-                session["id"] = account[cursor.column_names.index('id')]
-                session["nivel"] = account[cursor.column_names.index('nivel')]
+                session["id"] = account['id']
+                session["nivel"] = account['nivel']
                 session["impresiones"] = 1
                 cursor.execute(
                     "delete from kapps_db.accounts_log where id_account=%s",
@@ -94,7 +106,7 @@ def klogin(mysql, aplication_id):
                     "insert into kapps_db.accounts_log (token,id_account,ultimo_request) values (%s,%s,sysdate())",
                     (session["token"], session["id"]),
                 )
-                mysql.connection.commit()
+                mysql.commit()
                 cursor.close()
                 # Redirect to home page
                 return redirect(url_for("home"))
@@ -107,22 +119,21 @@ def klogin(mysql, aplication_id):
                         cursor.close()
                         session.pop("id", None)
                         return klogout(
-                            mysql,
                             msg="<b>Acceso Denegado</b<br>Solo es posible una sesión por Usuario.",
                         )
                 else:
                     cursor.close()
                     return klogout(
-                        mysql,
                         msg="<b>Acceso Denegado</b<br>Solo es posible una sesión por Usuario.",
                     )
         else:
             # Account doesnt exist or username/password incorrect
             msg = "Usuario o Contraseña incorrecto!"
             cursor.close()
-            return klogout(mysql, msg)
+            return klogout(msg)
     else:
-        return klogout(mysql, msg="")
+        print(">>> KLogin 2")
+        return klogout(msg="")
         # return render_template('login.html')
 
 

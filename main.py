@@ -46,16 +46,21 @@ app_admin = Flask(__name__)
 app_admin.config["PDF_FOLDER"] = "templates/pdfs/"
 app_admin.config["JSON_SORT_KEYS"] = False
 
-# CONEXION A BASE DE DATOS
-mysql_config = {
-  'user': os.getenv('MYSQL_USER'),
-  'password': os.getenv('MYSQL_PASSWORD'),
-  'host': os.getenv('MYSQL_HOST'),
-  'database': os.getenv('MYSQL_DB'),
-  'raise_on_warnings': True
-}
 
-mysql = mysql.connector.connect(**mysql_config)
+# CONEXION A BASE DE DATOS
+def DBConn():
+    Conn = mysql.connector.connect(
+        user= os.getenv('MYSQL_USER'),
+        password= os.getenv('MYSQL_PASSWORD'),
+        host= os.getenv('MYSQL_HOST'),
+        database= os.getenv('MYSQL_DB'),
+        raise_on_warnings = True
+    )
+    return Conn
+
+# mysqlConn=DBConn()
+
+
 
 # app_admin.config["MYSQL_HOST"] = os.getenv('MYSQL_HOST')
 # app_admin.config["MYSQL_CURSORCLASS"] = ""
@@ -82,13 +87,14 @@ mail = Mail(app_admin)
 @app_admin.route("/login", methods=["GET", "POST"])
 @app_admin.route("/", methods=["GET", "POST"])
 def login():
-    return klogin.klogin(mysql, aplication_id)
+    return klogin.klogin(aplication_id)
 
 
 @app_admin.route("/home/", methods=["GET", "POST"])
 def home():
     if "token" in session:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        mysqlConn = DBConn()
+        cursor = mysqlConn.cursor()
         cursor.execute('SET lc_time_names = "es_ES"')
         # VERIFICA PAGO DE USO DE KAPP!
         deuda_kapp=0
@@ -102,6 +108,7 @@ def home():
                     [aplication_id],
         )
         pagos_kapp = cursor.fetchone()
+        pagos_kapp = dict(zip(cursor.column_names, pagos_kapp)) if cursor.rowcount >= 0 else None
         ULTIMOPAGO_YEAR, ULTIMOPAGO_MES = pagos_kapp["ULTIMOPAGO_YEAR"],pagos_kapp["ULTIMOPAGO_MES"]
         if pagos_kapp["mes_actual"] == 0 or pagos_kapp["MES_3"] == 0 or  pagos_kapp["MES_2"] == 0 or pagos_kapp["MES_1"] == 0: 
             deuda_kapp=1
@@ -113,11 +120,7 @@ def home():
             [os.getenv('KAPP_ID'), session["id"]],
         )
         account = cursor.fetchone()
-        # DEFINE AMBIENTE SEGUN BASE DE DATOS
-        if app_admin.config["MYSQL_DB"] == "tx_pruebas":
-            session["ambiente"] = "PRUEBAS"
-        else:
-            session["ambiente"] = "PRODUCCION"
+        account = dict(zip(cursor.column_names, account)) if cursor.rowcount >= 0 else None
 
         session["clave"] = account["clave"]  # CODIGO DE 4 DIGITOS QUE DISTINGUE LA KAPP
         session["kapp"] = account["kapp"]  # NOMBRE DE LA EMPRESA
@@ -126,69 +129,16 @@ def home():
         session["Representante_Id"] = account["Representante_Id"]
         session["Contacto"] = account["contacto"]
 
-
-        # EXTRAE DATOS DE BODEGAJE
-        cursor.execute(
-            "select (select contenido from datos where id=3) rechazo, \
-            (select contenido from datos where id=4) sin_retiro \
-            from dual"
-        )
-        datos_dias = cursor.fetchone()
-        dias_bodegaje_rechazo = int(datos_dias["rechazo"])
-        dias_bodegaje_sin_retiro = int(datos_dias["sin_retiro"])
-        cursor.execute(
-            'select b.id_boleta, date_format(b.fecha,"%%Y-%%b-%%d %%h:%%i%%p") fecha_ingreso, date_format(be.fecha,"%%Y-%%b-%%d %%h:%%i%%p") fecha_estado, concat(e.nombre," ", m.nombre) equipo \
-                , case when be.id_estado=6 and b.equipo_retirado =1 then 8 else be.id_estado end id_estado \
-                , concat(timestampdiff(day,be.fecha,sysdate()), "d ", timestampdiff(HOUR,be.fecha,sysdate())%%24,"h ",timestampdiff(MINUTE,be.fecha,sysdate())%%60,"m") tiempo \
-                , boleta_tipo, boleta_original \
-                , case when be.id_estado=6 and b.equipo_retirado = 0 and timestampdiff(day,be.fecha,sysdate())>=%s then 1 \
-				    when be.id_estado=7 and b.equipo_retirado = 0 and timestampdiff(day,be.fecha,sysdate())>=%s then 1 \
-                else 0 end bodegaje \
-                , case when be.id_estado=6 then timestampdiff(day,be.fecha,sysdate())-%s \
-						when be.id_estado=7 then timestampdiff(day,be.fecha,sysdate())-%s \
-                    else 0 end bodegaje_dias \
-            from boletas b left join boletas_estados be on be.id_boleta=b.id_boleta \
-                left join marcas m on m.id=b.id_marca left join tipos_equipo e on e.id=b.id_tipo_equipo \
-            where b.cerrada=0 \
-                and be.id = (select max(id) from boletas_estados be2 where be2.id_boleta=be.id_boleta) \
-            order by be.fecha asc',
-            [
-                dias_bodegaje_sin_retiro,
-                dias_bodegaje_rechazo,
-                dias_bodegaje_sin_retiro,
-                dias_bodegaje_rechazo,
-            ],
-        )
-        boletas = cursor.fetchall()
-        boletas_bodegaje = 0
-        for row in boletas:
-            if row["bodegaje"] == 1:
-                boletas_bodegaje += 1
-        # ALERTAS
-        cursor.execute(
-            "select a.id id_alerta, a.id_boleta, ifnull(fecha_envio,'-') fecha_envio, case when isnull(fecha_envio) then 'Pendiente' else 'Enviado' end estado \
-                , acf.tipo, acf.descripcion, acf.mensaje, ec.telefono  \
-            from alertas a left join alertas_conf acf on acf.id=a.id_alerta_conf \
-                left join boletas b on b.id_boleta=a.id_boleta \
-                left join tx_clientes ec on ec.id=b.id_cliente \
-            where a.estado=1 and acf.estado=1  \
-                and (fecha_aceptada is null or fecha_envio is null) \
-                and timestampdiff(day,a.fecha_ingreso,sysdate())>dia"
-        )
-        alertas = cursor.fetchall()
         cursor.close()
         return render_template(
             "home.html",
             account=account,
-            boletas=boletas,
-            alertas=alertas,
-            boletas_bodegaje=boletas_bodegaje,
             deuda_kapp=deuda_kapp,
             ULTIMOPAGO_YEAR = ULTIMOPAGO_YEAR,
             ULTIMOPAGO_MES = ULTIMOPAGO_MES
         )
     else:
-        return klogin.klogout(mysql, msg="Sesión Caducada!")
+        return klogin.klogout(msg="Sesión Caducada!")
 
 
 @app_admin.route("/nueva", methods=["POST"])
@@ -2552,7 +2502,7 @@ def comentario():
 
 @app_admin.route("/logout")
 def logout():
-    return klogin.klogout(mysql, msg="")
+    return klogin.klogout(msg="")
 
 
 # CADA VEZ QUE SE LLAME A ALGUNA DEF
@@ -2567,7 +2517,8 @@ def before_request_func():
     if "token" in session:
         # print("con token")
         if request.endpoint != "logout" and request.endpoint != "login":
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            mysqlConn=DBConn()
+            cursor = mysqlConn.cursor()
             cursor.execute("SET session time_zone = '-6:00'")
             cursor.execute(
                 "select timestampdiff(second,ultimo_request,sysdate()) duracion_session, ac.vigencia, token \
@@ -2575,7 +2526,8 @@ def before_request_func():
                 where id_account=%s and ac.bloqueo=0",
                 [session["id"]],
             )
-            resultado = cursor.fetchone()
+            resultado=cursor.fetchone()
+            resultado = dict(zip(cursor.column_names, resultado)) if cursor.rowcount >= 0 else None
             if resultado is not None:
                 if (
                     session["token"] == resultado["token"]
@@ -2586,7 +2538,7 @@ def before_request_func():
                         "update kapps_db.accounts_log set ultimo_request=sysdate() where id_account=%s",
                         [session["id"]],
                     )
-                    mysql.connection.commit()
+                    mysqlConn.commit()
                     cursor.close()
                 elif (
                     session["token"] == resultado["token"]
@@ -2626,7 +2578,7 @@ def before_request_func():
                 cursor.close()
                 return klogin.klogout(mysql, msg="")
     else:
-        # print("sin token 2")
+        print("sin token 2")
         # print(request.method)
         # print(request.environ)
         # print("**"+str(request.routing_exception)+"**")
@@ -2653,7 +2605,7 @@ def before_request_func():
             elif request.endpoint == "imagenes":
                 return "No access"
             else:
-                klogin.klogin(mysql, aplication_id)
+                klogin.klogin(aplication_id)
 
 
 @app_admin.route("/crud_usuario", methods=["POST"])
