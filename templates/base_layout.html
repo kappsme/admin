@@ -66,11 +66,8 @@
     <input id="saldo-repuestos" type="hidden" value={{ saldo_repuestos }}>
 
     <div class="container-fluid border">
-        {% if session['ambiente']=='PRODUCCION': %}
         <div class="row bg-primary border ">
-            {% else: %}
-            <div class="row bg-warning">
-                {% endif %}
+
 
                 <!-- NOMBRE ELECTRONICA TORRES -->
                 <div class="col-7 col-md-3">
@@ -79,9 +76,6 @@
                             {{session['kapp']}}
                         </p><br>
                         <small style="font-size:.8rem; color: white; "> KAPPS.me - {{session['clave']}}
-                            {% if session['ambiente']!='PRODUCCION': %}
-                            PRUEBAS
-                            {% endif %} -
                             <em>{{ session['username'] }}</em>
                         </small>
                     </div>

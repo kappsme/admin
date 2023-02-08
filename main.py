@@ -97,45 +97,25 @@ def home():
         cursor = mysqlConn.cursor()
         cursor.execute('SET lc_time_names = "es_ES"')
         # VERIFICA PAGO DE USO DE KAPP!
-        deuda_kapp=0
         cursor.execute(
-            'select sum(case when date_format(sysdate(),"%%d")<date_format(fecha_cobro,"%%d") or periodo=date_format(now(),"%%Y%%m") then 1 else 0 end) mes_actual, \
-            sum(case when date_format(DATE_SUB(NOW(),INTERVAL 1 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_1, \
-            sum(case when date_format(DATE_SUB(NOW(),INTERVAL 2 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_2, \
-            sum(case when date_format(DATE_SUB(NOW(),INTERVAL 3 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_3, \
-            SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR, monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES \
-            from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id where k.id=%s',
-                    [aplication_id],
+            'select k.id, fecha_cobro, k.name, k.state, sum(case when date_format(sysdate(),"%%d")<date_format(fecha_cobro,"%%d") or periodo=date_format(now(),"%%Y%%m") then 1 else 0 end) mes_actual, \
+                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 1 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_1, \
+                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 2 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_2, \
+                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 3 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_3, \
+                SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR, monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES \
+            from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id \
+            group by k.id, fecha_cobro, k.name, k.state \
+            having sum(case when date_format(DATE_SUB(NOW(),INTERVAL 1 MONTH),"%Y%m")=periodo then 1 else 0 end) + \
+                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 2 MONTH),"%Y%m")=periodo then 1 else 0 end) + \
+                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 3 MONTH),"%Y%m")=periodo then 1 else 0 end) <3',
         )
-        pagos_kapp = cursor.fetchone()
-        pagos_kapp = dict(zip(cursor.column_names, pagos_kapp)) if cursor.rowcount >= 0 else None
-        ULTIMOPAGO_YEAR, ULTIMOPAGO_MES = pagos_kapp["ULTIMOPAGO_YEAR"],pagos_kapp["ULTIMOPAGO_MES"]
-        if pagos_kapp["mes_actual"] == 0 or pagos_kapp["MES_3"] == 0 or  pagos_kapp["MES_2"] == 0 or pagos_kapp["MES_1"] == 0: 
-            deuda_kapp=1
-        # KAPP INFO
-        cursor.execute(
-            "select a.name name, k.name kapp, k.id id_kapp, k.clave clave, a.username \
-            , (Select contenido from datos where id=16) Representante, (Select contenido from datos where id=17) Representante_Id, (Select contenido from datos where id=18) contacto \
-                 from kapps_db.accounts a, kapps_db.kapps k where k.id=%s and a.id = %s",
-            [os.getenv('KAPP_ID'), session["id"]],
-        )
-        account = cursor.fetchone()
-        account = dict(zip(cursor.column_names, account)) if cursor.rowcount >= 0 else None
-
-        session["clave"] = account["clave"]  # CODIGO DE 4 DIGITOS QUE DISTINGUE LA KAPP
-        session["kapp"] = account["kapp"]  # NOMBRE DE LA EMPRESA
-        session["username"] = account["username"]
-        session["Representante"] = account["Representante"]
-        session["Representante_Id"] = account["Representante_Id"]
-        session["Contacto"] = account["contacto"]
-
+        deuda_kapp = cursor.fetchall()
+        deuda_kapp = dict(zip(cursor.column_names, deuda_kapp)) if cursor.rowcount >= 0 else None
+        
         cursor.close()
         return render_template(
             "home.html",
-            account=account,
-            deuda_kapp=deuda_kapp,
-            ULTIMOPAGO_YEAR = ULTIMOPAGO_YEAR,
-            ULTIMOPAGO_MES = ULTIMOPAGO_MES
+            deuda_kapp=deuda_kapp
         )
     else:
         return klogin.klogout(msg="Sesión Caducada!")
