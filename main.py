@@ -94,7 +94,7 @@ def login():
 def home():
     if "token" in session:
         mysqlConn = DBConn()
-        cursor = mysqlConn.cursor()
+        cursor = mysqlConn.cursor(dictionary=True)
         cursor.execute('SET lc_time_names = "es_ES"')
         # VERIFICA PAGO DE USO DE KAPP!
         cursor.execute(
@@ -104,18 +104,17 @@ def home():
                 sum(case when date_format(DATE_SUB(NOW(),INTERVAL 3 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_3, \
                 SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR, monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES \
             from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id \
+            where k.id<>0 \
             group by k.id, fecha_cobro, k.name, k.state \
             having sum(case when date_format(DATE_SUB(NOW(),INTERVAL 1 MONTH),"%Y%m")=periodo then 1 else 0 end) + \
                 sum(case when date_format(DATE_SUB(NOW(),INTERVAL 2 MONTH),"%Y%m")=periodo then 1 else 0 end) + \
                 sum(case when date_format(DATE_SUB(NOW(),INTERVAL 3 MONTH),"%Y%m")=periodo then 1 else 0 end) <3',
         )
-        deuda_kapp = cursor.fetchall()
-        deuda_kapp = dict(zip(cursor.column_names, deuda_kapp)) if cursor.rowcount >= 0 else None
-        
+        deuda_kapps = cursor.fetchall()
         cursor.close()
         return render_template(
             "home.html",
-            deuda_kapp=deuda_kapp
+            deuda_kapps=deuda_kapps
         )
     else:
         return klogin.klogout(msg="Sesión Caducada!")

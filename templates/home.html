@@ -5,21 +5,21 @@
 <input id="id-boleta-interna" type="hidden">
 <div style="position: relative; top: 0; right: 0;">
 <!-- AVISO DE CUENTA -->
-{% if deuda_kapp!= None: %}
+{% if deuda_kapps!= None: %}
 <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
 <div class="toast-header">
     <img font-color="white" src="{{ url_for('static', filename='icons_svg/alerta.svg') }}" alt="Inicio"
         width="30" height="30" title="Inicio">
     <strong class="mr-auto text-danger">&MediumSpace; 
-    Notificación a {{session['kapp']}}
+    Cuentas Morosas
     </strong>
 </div>
 <div class="toast-body text-danger" style="font-size:0.85rem;">
     <b>Aviso</b><br><br>
-    Al parecer, su cuenta se encuentra irregular.<br>
-    Por favor, verifique el estado de su cuenta actualmente o comuníquese con el Administrador de la KAPP
-    <br><br>
-    <b>&#218;ltimo pago registrado: {{ ULTIMOPAGO_MES}} - {{ ULTIMOPAGO_YEAR}}</b>
+    {% for kapp in deuda_kapps %}
+    {{kapp['name']}}<br>
+    {% endfor %}
+    
 </div>
 </div>
 {% endif %}
