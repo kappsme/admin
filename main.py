@@ -44,9 +44,9 @@ aplication_id = os.getenv('KAPP_ID')
 
 
 
-app_admin = Flask(__name__)
-app_admin.config["PDF_FOLDER"] = "templates/pdfs/"
-app_admin.config["JSON_SORT_KEYS"] = False
+kapps_admin = Flask(__name__)
+kapps_admin.config["PDF_FOLDER"] = "templates/pdfs/"
+kapps_admin.config["JSON_SORT_KEYS"] = False
 
 
 # CONEXION A BASE DE DATOS
@@ -64,35 +64,35 @@ def DBConn():
 
 
 
-# app_admin.config["MYSQL_HOST"] = os.getenv('MYSQL_HOST')
-# app_admin.config["MYSQL_CURSORCLASS"] = ""
+# kapps_admin.config["MYSQL_HOST"] = os.getenv('MYSQL_HOST')
+# kapps_admin.config["MYSQL_CURSORCLASS"] = ""
 
 # Change this to your secret key (can be anything, it's for extra protection)
-app_admin.secret_key = os.getenv('APP_SECRET_KEY')
+kapps_admin.secret_key = os.getenv('APP_SECRET_KEY')
 
 # CONFIGURACION CORREO ELECTRONICO
-app_admin.config["MAIL_SERVER"] = os.getenv('MAIL_SERVER')
-app_admin.config["MAIL_PORT"] = os.getenv('MAIL_PORT')
-app_admin.config["MAIL_USERNAME"] = os.getenv('MAIL_USERNAME')
-app_admin.config["MAIL_PASSWORD"] = os.getenv('MAIL_PASSWORD')
+kapps_admin.config["MAIL_SERVER"] = os.getenv('MAIL_SERVER')
+kapps_admin.config["MAIL_PORT"] = os.getenv('MAIL_PORT')
+kapps_admin.config["MAIL_USERNAME"] = os.getenv('MAIL_USERNAME')
+kapps_admin.config["MAIL_PASSWORD"] = os.getenv('MAIL_PASSWORD')
 remitente = os.getenv('MAIL_SENDER')
 
-app_admin.config["MAIL_USE_TLS"] = False
-app_admin.config["MAIL_USE_SSL"] = False
-mail = Mail(app_admin)
+kapps_admin.config["MAIL_USE_TLS"] = False
+kapps_admin.config["MAIL_USE_SSL"] = False
+mail = Mail(kapps_admin)
 
 # BASE DE DATOS tx
 # mysql = pymysql.connect("localhost","tx_usuario1","tx_usuario1xqi","tx")
 
 # LOGINS
 
-@app_admin.route("/login", methods=["GET", "POST"])
-@app_admin.route("/", methods=["GET", "POST"])
+@kapps_admin.route("/login", methods=["GET", "POST"])
+@kapps_admin.route("/", methods=["GET", "POST"])
 def login():
     return klogin.klogin(aplication_id)
 
 
-@app_admin.route("/home/", methods=["GET", "POST"])
+@kapps_admin.route("/home/", methods=["GET", "POST"])
 def home():
     if "token" in session:
         mysqlConn = DBConn()
@@ -123,7 +123,7 @@ def home():
 
 
 
-@app_admin.route("/crud_kapp", methods=["POST"])
+@kapps_admin.route("/crud_kapp", methods=["POST"])
 def crud_kapp():
     pl = json.loads(request.form.get("parametro"))
     if  pl["accion"] == "0":  # ACTUALIZA KAPP
@@ -146,7 +146,7 @@ def crud_kapp():
 
 
 
-@app_admin.route("/nueva", methods=["POST"])
+@kapps_admin.route("/nueva", methods=["POST"])
 def nueva():
     # if 'loggedin' in session and request.method == 'POST':
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -162,7 +162,7 @@ def nueva():
     )
 
 
-@app_admin.route("/busqueda_cliente", methods=["POST"])
+@kapps_admin.route("/busqueda_cliente", methods=["POST"])
 def busqueda_cliente():
     parametro = request.form.get("parametro")
     tipo_busqueda = int(request.form.get("tipo_busqueda"))
@@ -204,7 +204,7 @@ def busqueda_cliente():
     return jsonify(resultado=resultado)
 
 
-@app_admin.route("/busqueda_cedula", methods=["POST"])
+@kapps_admin.route("/busqueda_cedula", methods=["POST"])
 def busqueda_cedula():
     parametro = request.form.get("parametro")
     cursor = mysql.connection.cursor()
@@ -214,7 +214,7 @@ def busqueda_cedula():
     return jsonify(resultado=resultado)
 
 
-@app_admin.route("/crud_cliente", methods=["POST"])
+@kapps_admin.route("/crud_cliente", methods=["POST"])
 def verificar_cliente():
     nombres = request.form.get("nombres").upper().strip()
     apellidos = request.form.get("apellidos").upper().strip()
@@ -299,7 +299,7 @@ def verificar_cliente():
             return "EOK"
 
 
-@app_admin.route("/boleta_ingreso", methods=["POST"])
+@kapps_admin.route("/boleta_ingreso", methods=["POST"])
 def boleta_ingreso():
     MARCA = request.form["marca"].upper().strip()
     TIPO_EQUIPO = request.form["tipo_equipo"].upper().strip()
@@ -362,7 +362,7 @@ def boleta_ingreso():
             return str(datos["id_boleta"])
 
 
-@app_admin.route("/crud_catalogo", methods=["POST"])
+@kapps_admin.route("/crud_catalogo", methods=["POST"])
 def crud_catalogo():
     tipo_accion = int(request.form.get("tipo-accion-catalogo"))
     tipo_catalogo = int(request.form.get("tipo-catalogo"))
@@ -422,7 +422,7 @@ def crud_catalogo():
             return "DUPLICADO"
 
 
-@app_admin.route("/ingreso_catalogo", methods=["POST"])
+@kapps_admin.route("/ingreso_catalogo", methods=["POST"])
 def ingreso_catalogo():
     tipo_ingreso = request.form["tipo_accion"]
     valor = request.form["valor"].upper().strip()
@@ -463,14 +463,14 @@ def ingreso_catalogo():
     return "EOK"
 
 
-@app_admin.route("/boleta1", methods=["POST"])
+@kapps_admin.route("/boleta1", methods=["POST"])
 def boleta1():
     tipo_display = int(request.form["tipo-display"])
     ID_BOLETA = request.form["id-boleta"]
     return boleta(tipo_display, ID_BOLETA)
 
 
-@app_admin.route("/boleta2", methods=["POST"])
+@kapps_admin.route("/boleta2", methods=["POST"])
 def boleta2():
     tipo_display = int(request.form["tipo-display-i"])
     ID_BOLETA = request.form["id-boleta-i"]
@@ -601,7 +601,7 @@ def boleta(tipo_display, ID_BOLETA):
 
 
 # CRUD MOVIMIENTOS
-@app_admin.route("/proceso_movimientos", methods=["POST"])
+@kapps_admin.route("/proceso_movimientos", methods=["POST"])
 def proceso_movimiento():
     monto = request.form["monto"]
     tipo = request.form["tipo"]
@@ -655,7 +655,7 @@ def proceso_movimiento():
     return "OK"
 
 
-@app_admin.route("/cambio_estado", methods=["POST"])
+@kapps_admin.route("/cambio_estado", methods=["POST"])
 def cambio_estado():
     id_boleta = int(request.form["id_boleta"])
     tipo_accion = int(request.form["tipo_accion"])
@@ -1190,7 +1190,7 @@ def cambio_estado():
     return "ok"
 
 
-@app_admin.route("/set_impresiones", methods=["POST"])
+@kapps_admin.route("/set_impresiones", methods=["POST"])
 def set_impresiones():
     session["impresiones"] = request.form["copias"]
     return "OK"
@@ -1263,7 +1263,7 @@ def crea_comprobante(id_boleta):
     return "Ok"
 
 
-@app_admin.route("/impresion_boleta/<string:id_boleta>/<int:tipo>")
+@kapps_admin.route("/impresion_boleta/<string:id_boleta>/<int:tipo>")
 def impresion_boleta(id_boleta, tipo):
     if tipo == 1:
         copias = int(session["impresiones"])
@@ -1275,7 +1275,7 @@ def impresion_boleta(id_boleta, tipo):
 # PDFS Y DESCARGA
 
 
-@app_admin.route(
+@kapps_admin.route(
     "/pdfs_online/<string:id_boleta>/<int:tipo_accion>/<int:extra>",
     methods=["GET", "POST"],
 )
@@ -1313,7 +1313,7 @@ def pdfs_online(id_boleta, tipo_accion, extra):
     if tipo_accion == 3:  # PARA IMPRIMIR EL NUMERO DE BOLETA
         boleta = datos_base.datos_boleta_impresion(mysql, id_boleta)
         return render_template("pdfs/boleta.html", id_boleta=id_boleta, boleta=boleta)
-        # return app_admin.root_path
+        # return kapps_admin.root_path
     if tipo_accion == 4:  # DESCARGAR COTIZACION PDF
         cotizacion = cotizacion_pdf(id_boleta)
         pdf = cotizacion[0]
@@ -1357,7 +1357,7 @@ def pdfs_online(id_boleta, tipo_accion, extra):
 # PDFS Y ENVIO POR CORREO
 
 
-@app_admin.route("/pdfs_mail", methods=["POST"])
+@kapps_admin.route("/pdfs_mail", methods=["POST"])
 def pdfs_mail():
     tipo_accion = int(request.form["tipo_accion"])
     id_boleta = int(request.form["id_boleta"])
@@ -1382,7 +1382,7 @@ def pdfs_mail():
         )
         pdf.write_html(html_source)
         archivo = (
-            app_admin.root_path
+            kapps_admin.root_path
             + "\\templates\pdf_repository\\recibo_"
             + str(id_movimiento)
             + ".pdf"
@@ -1394,7 +1394,7 @@ def pdfs_mail():
     if tipo_accion == 2:  # ENVIAR BOLETA PDF POR CORREO
         pdf = boleta_pdf(id_boleta)
         archivo = (
-            app_admin.root_path
+            kapps_admin.root_path
             + "\\templates\pdf_repository\\boleta_"
             + str(id_boleta)
             + ".pdf"
@@ -1407,7 +1407,7 @@ def pdfs_mail():
         cotizacion = cotizacion_pdf(id_boleta)
         pdf = cotizacion[0]
         archivo = (
-            app_admin.root_path
+            kapps_admin.root_path
             + "\\templates\pdf_repository\\cotizacion_"
             + str(cotizacion[1])
             + ".pdf"
@@ -1455,7 +1455,7 @@ def pdfs_mail():
         comprobante = comprobante_pdf(id_boleta)
         pdf = comprobante[0]
         archivo = (
-            app_admin.root_path
+            kapps_admin.root_path
             + "\\templates\pdf_repository\\comprobante_"
             + str(comprobante[1])
             + ".pdf"
@@ -1468,7 +1468,7 @@ def pdfs_mail():
         comprobante = comprobante_venta_pdf(id_venta)
         pdf = comprobante
         archivo = (
-            app_admin.root_path
+            kapps_admin.root_path
             + "\\templates\pdf_repository\\comprobante_venta_"
             + str(id_venta)
             + ".pdf"
@@ -1893,7 +1893,7 @@ def envio_correo(tipo_mensaje, destinatario, adjunto=0, extra=0):
             "Recibo Electrónica Torres", sender=remitente, recipients=[destinatario]
         )
         mensaje.body = "Buen día. Adjunto encontrará el recibo solicitado por su pago en Electrónica Torres"
-        with app_admin.open_resource(adjunto) as fp:
+        with kapps_admin.open_resource(adjunto) as fp:
             mensaje.attach("Recibo_" + extra + ".pdf", "application/pdf", fp.read())
         mail.send(mensaje)
     if tipo_mensaje == 2:  # ENVIO DE BOLETA
@@ -1901,7 +1901,7 @@ def envio_correo(tipo_mensaje, destinatario, adjunto=0, extra=0):
             "Boleta Electrónica Torres", sender=remitente, recipients=[destinatario]
         )
         mensaje.body = "Buen día. Adjunto encontrará la Boleta generada en su visita a Electrónica Torres"
-        with app_admin.open_resource(adjunto) as fp:
+        with kapps_admin.open_resource(adjunto) as fp:
             mensaje.attach("Boleta_" + extra + ".pdf", "application/pdf", fp.read())
         mail.send(mensaje)
     if tipo_mensaje == 3:  # ENVIO DE COTIZACION
@@ -1911,7 +1911,7 @@ def envio_correo(tipo_mensaje, destinatario, adjunto=0, extra=0):
             recipients=[destinatario],
         )
         mensaje.body = "Buen día.\nAdjunto encontrará la Cotización para la Reparación de su equipo en Electrónica Torres"
-        with app_admin.open_resource(adjunto) as fp:
+        with kapps_admin.open_resource(adjunto) as fp:
             mensaje.attach("cotizacion_" + extra + ".pdf", "application/pdf", fp.read())
         mail.send(mensaje)
     if tipo_mensaje == 4:  # ENVIO DE COMPROBANTE
@@ -1921,7 +1921,7 @@ def envio_correo(tipo_mensaje, destinatario, adjunto=0, extra=0):
             recipients=[destinatario],
         )
         mensaje.body = "Buen día.\nAdjunto encontrará el comprobante de Pago para la Reparación de su equipo en Electrónica Torres"
-        with app_admin.open_resource(adjunto) as fp:
+        with kapps_admin.open_resource(adjunto) as fp:
             mensaje.attach("comprobante" + extra + ".pdf", "application/pdf", fp.read())
         mail.send(mensaje)
     if tipo_mensaje == 5:  # ENVIO DE NOTIFICACION DE RECHAZO
@@ -1969,7 +1969,7 @@ def envio_correo(tipo_mensaje, destinatario, adjunto=0, extra=0):
             recipients=[destinatario],
         )
         mensaje.body = "Buen día.\nAdjunto encontrará el comprobante de Pago por su compra en Electrónica Torres"
-        with app_admin.open_resource(adjunto) as fp:
+        with kapps_admin.open_resource(adjunto) as fp:
             mensaje.attach(
                 "comprobante" + str(extra) + ".pdf", "application/pdf", fp.read()
             )
@@ -1988,7 +1988,7 @@ def envio_correo(tipo_mensaje, destinatario, adjunto=0, extra=0):
     return "OK"
 
 
-@app_admin.route("/busqueda", methods=["POST"])
+@kapps_admin.route("/busqueda", methods=["POST"])
 def busqueda():
     tipo_busqueda = int(request.form.get("tipo_busqueda"))
     cursor = mysql.connection.cursor()
@@ -2034,7 +2034,7 @@ def busqueda():
 # REPORTERIA
 
 
-@app_admin.route("/reportes", methods=["POST"])
+@kapps_admin.route("/reportes", methods=["POST"])
 def reportes():
     tipo_reporte = int(request.form.get("tipo-reporte"))
     tipo_accion = int(request.form.get("tipo-accion"))
@@ -2463,7 +2463,7 @@ def reportes():
                 },
             )
     
-@app_admin.route("/historial", methods=["POST"])
+@kapps_admin.route("/historial", methods=["POST"])
 def historial():
     id_boleta = request.form.get("id_boleta")
     tipo_accion = int(request.form.get("tipo_accion"))
@@ -2471,7 +2471,7 @@ def historial():
     return jsonify(resultado=resultado)
 
 
-@app_admin.route("/comentario", methods=["POST"])
+@kapps_admin.route("/comentario", methods=["POST"])
 def comentario():
     USUARIO = session["id"]
     id_boleta = request.form.get("id_boleta")
@@ -2505,13 +2505,13 @@ def comentario():
     return "Ok"
 
 
-@app_admin.route("/logout")
+@kapps_admin.route("/logout")
 def logout():
     return klogin.klogout(msg="")
 
 
 # CADA VEZ QUE SE LLAME A ALGUNA DEF
-@app_admin.before_request
+@kapps_admin.before_request
 def before_request_func():
     print("")
     #print(":::::----------------------------------------------------------------------:::::")
@@ -2613,7 +2613,7 @@ def before_request_func():
                 klogin.klogin(aplication_id)
 
 
-@app_admin.route("/crud_usuario", methods=["POST"])
+@kapps_admin.route("/crud_usuario", methods=["POST"])
 def crud_usuario():
     accion = int(request.form.get("accion"))
     parametro = request.form.get("parametro")
@@ -2654,7 +2654,7 @@ def crud_usuario():
     return resultado
 
 
-@app_admin.route("/usuarios", methods=["POST"])
+@kapps_admin.route("/usuarios", methods=["POST"])
 def usuarios():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('SET lc_time_names = "es_ES"')
@@ -2687,8 +2687,8 @@ def usuarios():
             datos_usuarios = cursor.fetchall()
             cursor.close()
 
-            # prueba=os.listdir(app_admin.config["APPLICATION_ROOT"])
-            # prueba=app_admin.root_path
+            # prueba=os.listdir(kapps_admin.config["APPLICATION_ROOT"])
+            # prueba=kapps_admin.root_path
             prueba = ""
             return render_template(
                 "usuarios.html",
@@ -2735,7 +2735,7 @@ def usuarios():
 
 
 # INVENTARIO PRINCIPAL
-@app_admin.route("/inv", methods=["POST"])
+@kapps_admin.route("/inv", methods=["POST"])
 def inv():
     inv_accion = int(request.form.get("inv-accion"))
     inv_accion2 = 0
@@ -2757,7 +2757,7 @@ def inv():
 
 
 # TIENDA
-@app_admin.route("/tnd", methods=["POST"])
+@kapps_admin.route("/tnd", methods=["POST"])
 def tnd():
     tienda_accion = int(request.form.get("tienda-accion"))
     tienda_accion2 = 0
@@ -2774,11 +2774,11 @@ def tnd():
 
 
 # INVENTARIO IMAGENES (desuso)
-@app_admin.route("/imagenes/<codigo>/<imagen>", methods=["GET"])
+@kapps_admin.route("/imagenes/<codigo>/<imagen>", methods=["GET"])
 def imagenes(codigo, imagen):
     with open(
         os.path.join(
-            app_admin.root_path, "inv_imagenes", codigo + "_" + imagen + ".jpg"
+            kapps_admin.root_path, "inv_imagenes", codigo + "_" + imagen + ".jpg"
         ),
         "rb",
     ) as f:
@@ -2790,7 +2790,7 @@ def imagenes(codigo, imagen):
 
 
 # INVENTARIO IMAGENES (desuso)
-@app_admin.route("/imagenes_inventario2", methods=["POST"])
+@kapps_admin.route("/imagenes_inventario2", methods=["POST"])
 def imagenes_inventario2():
     formulario = request.form
     if formulario["tipo"] == "1":  # inventario
@@ -2804,7 +2804,7 @@ def imagenes_inventario2():
 
 
 # TIENDA
-@app_admin.route("/imagenes_inventario", methods=["POST"])
+@kapps_admin.route("/imagenes_inventario", methods=["POST"])
 def imagenes_inventario():
     formulario = request.form
     if formulario["tipo"] == "1":  # inventario mostrar
@@ -2866,11 +2866,11 @@ def imagenes_inventario():
 
 
 # ERRORES
-@app_admin.errorhandler(404)
+@kapps_admin.errorhandler(404)
 def page_not_found(e):
     # note that we set the 404 status explicitly
     return klogin.klogout(mysql, msg="")
 
 
 if __name__ == "__main__":
-    app_admin.run(host="0.0.0.0", port=os.getenv('SERVER_PORT'), debug=True)
+    kapps_admin.run(host="0.0.0.0", port=os.getenv('SERVER_PORT'), debug=True)
