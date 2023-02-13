@@ -1,138 +1,32 @@
 {% extends 'base_layout.html' %}
 
 {% block content %}
-<script type=text/javascript src="{{ url_for('static', filename='js/etga.js') }}"></script>
-<input id="id-boleta-interna" type="hidden">
-<div style="position: relative; top: 0; right: 0;">
-<!-- AVISO DE CUENTA -->
-{% if deuda_kapps!= None: %}
-<div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
-<div class="toast-header">
-    <img font-color="white" src="{{ url_for('static', filename='icons_svg/alerta.svg') }}" alt="Inicio"
-        width="30" height="30" title="Inicio">
-    <strong class="mr-auto text-danger">&MediumSpace; 
-    Cuentas Morosas
-    </strong>
-</div>
-<div class="toast-body text-danger" style="font-size:0.85rem;">
-    <b>Aviso</b><br><br>
-    {% for kapp in deuda_kapps %}
-    {{kapp['name']}}<br>
-    {% endfor %}
-    
-</div>
-</div>
+<!-- AVISO DE MOROSIDAD -->
+{% if kapps_morosas >0: %}
+    <div style="position: relative; top: 0; right: 0;">
+        <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+            <div class="toast-header">
+                <img font-color="white" src="{{ url_for('static', filename='icons_svg/alerta.svg') }}" alt="Inicio"
+                    width="30" height="30" title="Inicio">
+                <strong class="mr-auto text-danger">&MediumSpace; 
+                Cuentas Morosas
+                </strong>
+            </div>
+            <div class="toast-body text-danger" style="font-size:0.85rem;">
+                {% for kapp in kapps_info if kapp['dias_atraso']>=0 and kapp['state']!='INACTIVE': %}
+                {{kapp['name']}} [{{kapp['id']}}] (Último Pago: {{kapp['ULTIMOPAGO_YEAR']}}-{{kapp['ULTIMOPAGO_MES']}})<br>
+                {% endfor %}   
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function () {
+            $('.toast').toast('show');
+        });
+    </script>
 {% endif %}
-
-<!-- ALERTAS -->
-    {% for a in alertas %}
-    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false"
-        id='alerta-{{a.id_alerta}}' name='alerta-{{a.id_alerta}}'>
-        <div class="toast-header">
-            <img font-color="white" src="{{ url_for('static', filename='icons_svg/alerta.svg') }}" alt="Inicio"
-                width="30" height="30" title="Inicio">
-            <strong class="mr-auto text-primary">&MediumSpace; 
-                {% if a.tipo=='EMAIL' or a.tipo=='WA': %}Notificación a Cliente
-                {% else: %} Notificación
-                {% endif %}
-            </strong>
-            <small class="text-muted">{{ a.tipo }}</small>
-            <button type="button" class="ml-2 mb-1 close" name='btn-alerta' id="btn-alerta" id-alerta="{{a.id_alerta}}"
-                mensaje="{{a.mensaje}}" fecha-envio="{{a.fecha_envio}}" id-boleta="{{a.id_boleta}}"
-                estado="{{a.estado}}" tipo="{{a.tipo}}" telefono="{{a.telefono}}" objeto='alerta-{{a.id_alerta}}'>
-                <span aria-hidden="true">&Xi;</span>
-            </button>
-            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <div class="toast-body text-primary" style="font-size:0.85rem;">
-            <b>Boleta {{a.id_boleta}}</b><br>
-            {{ a.descripcion }}<br><br>
-            Estado: <b>{{ a.estado }}</b>{% if a.estado=='Pendiente' and (a.tipo=='EMAIL' or a.tipo=='WA'): %}<small> (Por favor, infórmelo al
-                Administrador)</small>{% endif %}<br>
-            Fecha Notificación: <b>{{a.fecha_envio}}</b>
-        </div>
-    </div>
-    {% endfor %}
-
+<div>
+{% include 'kapps.html' %}
 </div>
-
-<script>
-    $(document).ready(function () {
-        $('.toast').toast('show');
-    });
-</script>
-
-<!--Modal para ver y modificar alertas-->
-<div class="modal fade bd-example-modal" id="modal-alerta" name="modal-alerta" tabindex="-1" role="dialog"
-    aria-labelledby="mySmallModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title text-primary" style="font-size:1.3rem" id="titulo_modal2">
-                    <p id="lbl-titulo-alerta"></p>
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p id="lbl-mensaje-alerta" class="text-primary"></p>
-                <textarea name="mensaje-alerta" id="mensaje-alerta" class="form-control" style="font-size:0.90rem"
-                    rows="11" readonly></textarea><br>
-                <p id="lbl-datos-alerta" class="text-primary"></p>
-
-
-            </div>
-            <div class="modal-footer">
-                <!-- ENVIAR POR WHATSAPP -->
-                <a id="link-whatsapp-alerta" type="button" class="btn btn-primary p-1 m-2"
-                    style="width:4rem;height:4rem;" target="_blank" href="">
-                    <img src="{{ url_for('static', filename='icons_svg/whatsApp-Logo.svg') }}"
-                        alt="Enviar WhatsApp (A Teléfono 1)" class="img inline" style="width:3.6rem;height:3.6rem;"
-                        title="Enviar WhatsApp (A Teléfono 1)">
-                </a>
-                <!-- COMENTARIO A BOLETA -->
-                <div class="btn btn-primary p-2 pt-3 m-0" alt="Agregar Comentario" id='btn-agregar-comentario'
-                    style="height:4rem ;width:4rem" data-toggle="modal" data-target="#modal-comentario-boleta">
-                    <img src="{{ url_for('static', filename='icons_svg/comment2.svg') }}" class="img inline"
-                        style="height:2.5rem ;width:2.5rem" title="Agregar comentario">
-                </div>
-                <input type="hidden" id="id-alerta-objeto" name="id-alerta-objeto" />
-                <input type="hidden" id="id-alerta-modificar" name="id-alerta-modificar" />
-                <input type="button" class="btn btn-primary btn-sm px-1" id="btn-guardar-alerta"
-                    style="height:4rem ;width:4rem" name="boton-guardar-alerta" value="Guardar" />
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-<!-- PARA QUE FUNCONE EL HOME Y LOS CAMPOS DE AUTO COMPLETE EN nueva.html -->
-<div class="autocomplete">
-    <input type="hidden" name="marca" id="marca">
-</div>
-<div class="autocomplete">
-    <input type="hidden" name="tipo-equipo" id="tipo-equipo">
-</div>
-<div class="autocomplete">
-    <input type="hidden" name="zona" id="zona">
-</div>
-<div class="autocomplete">
-    <input type="hidden" name="zona2" id="zona2">
-</div>
-<div class="autocomplete">
-    <input type="hidden" name="repuesto" id="repuesto">
-</div>
-<script>
-    var marcas = [0];
-    var tipos_equipo = [0];
-    var zonas = [0];
-    var repuestos = [0];
-</script>
-
-
-
 {% endblock %}
+

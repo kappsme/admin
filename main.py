@@ -34,6 +34,8 @@ import klogin
 #import math
 from dotenv import load_dotenv
 import mysql.connector
+import json
+import requests
 
 # ENV Variables
 load_dotenv()
@@ -98,26 +100,50 @@ def home():
         cursor.execute('SET lc_time_names = "es_ES"')
         # VERIFICA PAGO DE USO DE KAPP!
         cursor.execute(
-            'select k.id, fecha_cobro, k.name, k.state, sum(case when date_format(sysdate(),"%%d")<date_format(fecha_cobro,"%%d") or periodo=date_format(now(),"%%Y%%m") then 1 else 0 end) mes_actual, \
-                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 1 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_1, \
-                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 2 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_2, \
-                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 3 MONTH),"%%Y%%m")=periodo then 1 else 0 end) MES_3, \
-                SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR, monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES \
-            from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id \
-            where k.id<>0 \
-            group by k.id, fecha_cobro, k.name, k.state \
-            having sum(case when date_format(DATE_SUB(NOW(),INTERVAL 1 MONTH),"%Y%m")=periodo then 1 else 0 end) + \
-                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 2 MONTH),"%Y%m")=periodo then 1 else 0 end) + \
-                sum(case when date_format(DATE_SUB(NOW(),INTERVAL 3 MONTH),"%Y%m")=periodo then 1 else 0 end) <3',
+            """select k.id, k.name, date(k.fecha_cobro) fecha_cobro, state, licencias 
+			, count(distinct ka.username) cuentas_activas 
+            , ifnull(datediff(now(),DATE_ADD(date_format(concat(ifnull(max(periodo), CAST(date_format(fecha_cobro,"%Y%m") AS CHAR CHARACTER SET utf8))
+                    ,CAST(date_format(fecha_cobro,"%d") AS CHAR CHARACTER SET utf8)),"%Y%m%d"),INTERVAL 1 MONTH)),0) dias_atraso
+            , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
+            , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
+            from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id 
+            left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1 
+        group by k.id, k.name, k.fecha_cobro, state, licencias""",
         )
-        deuda_kapps = cursor.fetchall()
+        kapps_info = cursor.fetchall()
+        kapps_morosas = len([kapp['id'] for kapp in kapps_info if kapp['dias_atraso']>=0])
         cursor.close()
         return render_template(
-            "home.html",
-            deuda_kapps=deuda_kapps
+            "home.html"
+            ,kapps_info=kapps_info
+            ,kapps_morosas=kapps_morosas
         )
     else:
         return klogin.klogout(msg="Sesión Caducada!")
+
+
+
+@app_admin.route("/crud_kapp", methods=["POST"])
+def crud_kapp():
+    pl = json.loads(request.form.get("parametro"))
+    if  pl["accion"] == "0":  # ACTUALIZA KAPP
+        mysqlConn = DBConn()
+        cursor = mysqlConn.cursor()
+        cursor.execute(
+            "update kapps_db.kapps set name=%s, state=%s, licencias=%s, fecha_cobro=%s where id=%s",
+            (
+                pl["nombre"],
+                pl["estado"],
+                pl["licencias"],
+                pl["fecha_cobro"],
+                pl["kapp_id"],
+            ),
+        )
+        cursor.close()
+        return {'result':'success', 'reason': None}
+    return {'result':'failed', 'reason':'No Action Specified'}
+
+
 
 
 @app_admin.route("/nueva", methods=["POST"])
@@ -2525,7 +2551,7 @@ def before_request_func():
                 ):
                     # print("SESION CADUCADA")
                     cursor.close()
-                    return klogin.klogout(mysql, msg="Sesión Caducada!")
+                    return klogin.klogout(msg="Sesión Caducada!")
                 elif (
                     session["token"] != resultado["token"]
                     and resultado["duracion_session"] <= resultado["vigencia"]
@@ -2555,7 +2581,7 @@ def before_request_func():
             else:  # USUARIO NO EN LA BASE DE LOGS
                 # print("sin token 1")
                 cursor.close()
-                return klogin.klogout(mysql, msg="")
+                return klogin.klogout(msg="")
     else:
         print("sin token 2")
         # print(request.method)
