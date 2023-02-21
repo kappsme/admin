@@ -128,6 +128,7 @@ def crud_kapp():
     result, reason, data = 'failed','No Action Specified', None
     mysqlConn = DBConn()
     cursor = mysqlConn.cursor(dictionary=True)
+    cursor.execute('SET lc_time_names = "es_ES"')
     pl = json.loads(request.form.get("parametro"))
     if  pl["accion"] == "0":  # ACTUALIZA KAPP
         cursor.execute(
@@ -150,16 +151,27 @@ def crud_kapp():
             ),
         )
         response_periodo_sugerido = cursor.fetchone()
+        result, reason, data = 'success', None, {'periodo_sugerido' : response_periodo_sugerido['periodo_sugerido']}
+    elif pl["accion"] == "2":  # REGISTRAR PAGO
         cursor.execute(
-            """select * from kapps_db.pagos where kapp_id=%s
+            """ insert into kapps_db.pagos (kapp_id, monto, periodo, fecha_registro, estado, userid) values (%s,%s,%s,%s,1,%s) """,
+            (
+                pl["kapp_id"], pl["monto"] , pl["periodo"], pl["fecha"],session["id"],
+            ),
+        )
+        result, reason, data = 'success', None, None
+    elif pl["accion"] == "3":  # DATOS PAGOS
+        cursor.execute(
+            """select id, kapp_id, periodo, monto, date_format(fecha_registro,'%Y %M %d') fecha_registro, estado, userid, userid_elimina, fecha_elimina from kapps_db.pagos where kapp_id=%s
                 order by periodo desc limit 12;""",
             (
                 pl["kapp_id"],
             ),
         )
         response_pagos = cursor.fetchall()
-
-        result, reason, data = 'success', None, {'periodo_sugerido':response_periodo_sugerido['periodo_sugerido'], 'pagos':[response_pagos]}
+        result, reason, data = 'success', None, {'pagos':response_pagos}
+    
+    mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}
 

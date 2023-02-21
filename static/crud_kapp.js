@@ -12,6 +12,7 @@ $(document).ready(function () {
         return `${year}-${month}-${day}`;
     }
 
+    var kappId = -1
 
 
     // BOTON CONFIRMAR MODAL-CRUD-USER
@@ -27,39 +28,38 @@ $(document).ready(function () {
 
     // BOTON EDITAR KAPP
     $(document).on('click', '#btn-editar-kapp', function () {
-        var id = $(this).attr('data-id-kapp')
-        document.getElementById("kapp-" + id + "-nombre").disabled = false;
-        document.getElementById("kapp-" + id + "-estado").disabled = false;
-        document.getElementById("kapp-" + id + "-fecha-cobro").disabled = false;
-        document.getElementById("kapp-" + id + "-licencias").disabled = false;
-        document.getElementById("kapp-" + id + "-div-editar").hidden = true;
-        document.getElementById("kapp-" + id + "-div-guardar").hidden = false;
-        $("#kapp-" + id + "-estado").trigger("chosen:updated");
+        kappId = $(this).attr('data-kapp-id')
+        document.getElementById("kapp-" + kappId + "-nombre").disabled = false;
+        document.getElementById("kapp-" + kappId + "-estado").disabled = false;
+        document.getElementById("kapp-" + kappId + "-fecha-cobro").disabled = false;
+        document.getElementById("kapp-" + kappId + "-licencias").disabled = false;
+        document.getElementById("kapp-" + kappId + "-div-editar").hidden = true;
+        document.getElementById("kapp-" + kappId + "-div-guardar").hidden = false;
+        $("#kapp-" + kappId + "-estado").trigger("chosen:updated");
     });
 
     // BOTON GUARDAR KAPP
     $(document).on('click', '#btn-guardar-kapp', function () {
-        var id = $(this).attr('data-id-kapp')
+        kappId = $(this).attr('data-kapp-id')
         $("#modal-crud-kapp-titulo").text("Guardar KAPP");
         document.getElementById("modal-crud-kapp-btn").hidden = false;
 
-        if ($('#kapp-' + id + '-nombre').val().length <= 5) {
+        if ($('#kapp-' + kappId + '-nombre').val().length <= 5) {
             document.getElementById("modal-crud-kapp-btn").hidden = true;
             $("#modal-crud-kapp-body").html('El nombre de Cliente para la KAPP debe ser mayor a 5 Caracteres');
             $('#modal-crud-kapp').modal('show');
         } else {
             var desactivacion = "", suspension = "";
-            if ($('#kapp-' + id + '-estado').val() == "INACTIVE") {
-                desactivacion = "<br><br>La KAPP se desactivará. Ningún usuario tendrá acceso.<br><br>¿Desea proceder?";
+            if ($('#kapp-' + kappId + '-estado').val() == "INACTIVE") {
+                desactivacion = "<br><br>La KAPP se desactivará. Ningún usuario tendrá acceso.<br><br>";
             }
-            if ($('#kapp-' + id + '-estado').val() == "BLOCKED") {
-                suspension = "<br><br>La KAPP se suspenderá. Ningún usuario tendrá acceso.<br><br>¿Desea proceder?";
+            if ($('#kapp-' + kappId + '-estado').val() == "BLOCKED") {
+                suspension = "<br><br>La KAPP se suspenderá. Ningún usuario tendrá acceso.<br><br>";
             }
             var bloqueo = 0;
-            var datos = JSON.stringify({ accion: '0', kapp_id: id, nombre: $('#kapp-' + id + '-nombre').val(), estado: $('#kapp-' + id + '-estado').val(), fecha_cobro: $('#kapp-' + id + '-fecha-cobro').val(), licencias: $('#kapp-' + id + '-licencias').val() });
+            var datos = JSON.stringify({ accion: '0', kapp_id: kappId, nombre: $('#kapp-' + kappId + '-nombre').val(), estado: $('#kapp-' + kappId + '-estado').val(), fecha_cobro: $('#kapp-' + kappId + '-fecha-cobro').val(), licencias: $('#kapp-' + kappId + '-licencias').val() });
 
-            $("#modal-crud-kapp-body").html("La KAPP <em>" + $(this).attr('data-id-kapp') + "</em> será modificada." + desactivacion + "<br><br>¿Desea continuar?");
-            // $('#modal-crud-kapp-id').val($(this).attr('data-id-kapp'));
+            $("#modal-crud-kapp-body").html("La KAPP <em>" + kappId + "</em> será modificada." + desactivacion + "<br><br>¿Desea continuar?");
             $("#modal-crud-kapp-accion").val(0); // GUARDAR KAPP
             $('#modal-crud-kapp-datos').val(datos);
             $('#modal-crud-kapp').modal('show');
@@ -67,53 +67,9 @@ $(document).ready(function () {
     });
 
 
-    // BOTON REGISTRAR PAGO 
-    $(document).on('click', '#modal-kapp-pago-btn-guardar', function () {
-        this.disabled = true;
-        $(this).text("Espere...");
-        var pl = JSON.stringify({ accion: '2', kapp_id: id, nombre: $('#kapp-' + id + '-nombre').val(), estado: $('#kapp-' + id + '-estado').val(), fecha_cobro: $('#kapp-' + id + '-fecha-cobro').val(), licencias: $('#kapp-' + id + '-licencias').val() });
-
-        $.post($SCRIPT_ROOT + '/crud_kapp', {
-            parametro: pl
-        }
-            , function (rpl) {
-                location.reload();
-            }, "json");
-        new Promise((resolve, reject) => {
-            $.post($SCRIPT_ROOT + '/crud_kapp', {
-                accion: 4, // ACTIVAR USUARIO
-                id_usuario: $(this).attr('id-usuario'),
-            }, function (datos) {
-                resolve(datos)
-            })
-        }).then((datos) => {
-            if (datos.substr(0, 15) == '<!DOCTYPE html>') {
-                document.write(datos);
-            }
-            if (datos == "OK") {
-                $("#btn-usuarios-admin").click();
-            }
-            if (datos == "NO-DISPONIBILIDAD") {
-                this.disabled = false;
-                $(this).text("Activar");
-                $('#modal-notificacion-titulo').html("Notificación de Usuarios");
-                $('#modal-notificacion-mensaje').html("<b>No es posible activar este usuario<br><br>Ya se está utilizando la cantidad de licencias contratadas</b>");
-                $('#modal-notificacion').modal('show');
-            }
-        });
-    });
-
-
-    // BOTON CREAR USUARIO - CLICK
-    $(document).on('click', '#btn-kapp-registrar-pago', function () {
-        // VALIDA VALORES EN LOS CAMPOS
-        $("#modal-kapp-pago-periodo").val("");
-        $("#modal-kapp-pago-monto").val("");
-        var fecha = document.querySelector("#modal-kapp-pago-fecha");
-        fecha.value = "";
-        $('#modal-kapp-pago').modal('show');
-        var pl = JSON.stringify({ accion: '1', kapp_id: $(this).attr('data-kapp-id') });
-
+    // Funcion para crear tabla de pagos
+    function tablaDePagos(kappIDX) {
+        var pl = JSON.stringify({ accion: '3', kapp_id: kappIDX });
         new Promise((resolve, reject) => {
             $.post($SCRIPT_ROOT + '/crud_kapp', {
                 parametro: pl,
@@ -122,15 +78,79 @@ $(document).ready(function () {
             }, "json")
         }).then((rpl) => {
             if (rpl.result == "success") {
-                $.each(rpl.data.pagos, function (index, registro) {
-                    alert(registro.periodo + '....' + registro[1]);
+                // creates a <table> element and a <tbody> element
+                const tblBody = document.getElementById("modal-kapp-pagos-tabla-body");
+                tblBody.innerHTML = '';
+                // creating all cells
+                $.each(rpl.data.pagos, function (index, pago) {
+                    const row = document.createElement("tr");
+                    for (const column of ['periodo', 'fecha_registro', 'monto']) {
+                        const cell = document.createElement("td");
+                        const cellText = document.createTextNode(pago[column]);
+                        cell.appendChild(cellText);
+                        row.appendChild(cell);
+                    }
+                    tblBody.appendChild(row);
                 });
+                //     //alert(registro.periodo + '....' + rpl.data.periodo_sugerido);
+                //     alert(registro["periodo"]);
+            }
+        })
 
+    }
+
+
+
+    // BOTON REGISTRAR PAGO - MODAL
+    $(document).on('click', '#btn-kapp-registrar-pago', function () {
+        kappId = $(this).attr('data-kapp-id')
+        $('#modal-kapp-pago-btn-guardar').attr('data-kapp-id', kappId)
+        $("#modal-kapp-pago-periodo").val("");
+        $("#modal-kapp-pago-monto").val("");
+        var fecha = document.querySelector("#modal-kapp-pago-fecha");
+        fecha.value = "";
+        $('#modal-kapp-pago').modal('show');
+        var pl = JSON.stringify({ accion: '1', kapp_id: kappId });
+        new Promise((resolve, reject) => {
+            $.post($SCRIPT_ROOT + '/crud_kapp', {
+                parametro: pl,
+            }, function (rpl) {
+                resolve(rpl);
+            }, "json")
+        }).then((rpl) => {
+            if (rpl.result == "success") {
+                tablaDePagos(kappId)
                 $("#modal-kapp-pago-periodo").val(rpl.data.periodo_sugerido);
-
                 fecha.value = hoy();
             }
         })
+
+    });
+
+
+    // BOTON REGISTRAR PAGO - GUARDAR
+    $(document).on('click', '#modal-kapp-pago-btn-guardar', function () {
+        this.disabled = true;
+        kappId = $('#modal-kapp-pago-btn-guardar').attr('data-kapp-id')
+        $(this).text("Espere...");
+        var pl = JSON.stringify({ accion: '2', kapp_id: kappId, fecha: $('#modal-kapp-pago-fecha').val(), periodo: $('#modal-kapp-pago-periodo').val(), monto: $('#modal-kapp-pago-monto').val() });
+        new Promise((resolve, reject) => {
+            $.post($SCRIPT_ROOT + '/crud_kapp', {
+                parametro: pl,
+            }, function (rpl) {
+                resolve(rpl);
+            }, "json")
+        }).then((rpl) => {
+            this.disabled = false;
+            if (rpl.result == "success") {
+                tablaDePagos(kappId)
+            }
+        })
+        $(this).text("Registrar Pago");
+    });
+
+    $("#modal-kapp-pago").on('hidden.bs.modal', function(){
+        location.reload();
     });
 
     // BOTON RESTABLECER SESION

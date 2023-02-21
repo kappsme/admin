@@ -6,134 +6,47 @@
 	<div class="card text-white my-2 mx-2 px-0 border">
 
 		<div class="card-body px-0 py-1 my-0">
-				<table class="table table-bordered">
-					<thead class="bg-primary">
-						<tr style="text-align: center;color: rgb(255, 255, 255);">
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">ID KAPP
-							</th>
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">Cliente
-							</th>
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">Estado
-							</th>
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">Fecha de Corte
-							</th>
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">Días Atraso
-							</th>
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">Licencias
-							</th>
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">Usuarios
-							</th>
-							<th scope="col" class="p-1 mx-1">
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<!--Ciclo KAPPs Activas/Suspendidas-->
-						{% for rmov in kapps_info if rmov['state']!='INACTIVE': %}
-						<tr class="border p-0 m-0
+			<table class="table table-bordered">
+				<thead class="bg-primary">
+					<tr style="text-align: center;color: rgb(255, 255, 255);">
+						<th scope="col" class="p-1 mx-1">
+							<p style="font-size:1rem" class="p-0 m-0">ID KAPP
+						</th>
+						<th scope="col" class="p-1 mx-1">
+							<p style="font-size:1rem" class="p-0 m-0">Cliente
+						</th>
+						<th scope="col" class="p-1 mx-1">
+							<p style="font-size:1rem" class="p-0 m-0">Estado
+						</th>
+						<th scope="col" class="p-1 mx-1">
+							<p style="font-size:1rem" class="p-0 m-0">Fecha de Corte
+						</th>
+						<th scope="col" class="p-1 mx-1">
+							<p style="font-size:1rem" class="p-0 m-0">Días Atraso
+						</th>
+						<th scope="col" class="p-1 mx-1">
+							<p style="font-size:1rem" class="p-0 m-0">Licencias
+						</th>
+						<th scope="col" class="p-1 mx-1">
+							<p style="font-size:1rem" class="p-0 m-0">Usuarios
+						</th>
+						<th scope="col" class="p-1 mx-1">
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<!--Ciclo KAPPs Activas/Suspendidas-->
+					{% for rmov in kapps_info if rmov['state']!='INACTIVE': %}
+					<tr class="border p-0 m-0
 						{% if rmov['state']=='BLOCKED': %} alert-warning
 						{% elif rmov['dias_atraso']>=1: %} alert-danger
 						{% endif %} " style="font-size:0.9rem;color:midnightblue;">
-							<td class="p-1 m-0" style="border-color: white;">
-								<p class="p-0 m-0">{{ rmov['id'] }}</p>
-							</td>
-							<td class="p-1 m-0" style="border-color: white;">
-								<input class="form-control form-control-md" type="input"
-									id="kapp-{{rmov['id']}}-nombre" style="font-size:0.75rem;height:1.7rem;"
-									disabled value="{{rmov['name']}}">
-							</td>
-							<td class="p-1 m-0" style="border-color: white;">
-								<p class="p-0 m-0">
-									<select name="kapp-{{rmov['id']}}-estado" id="kapp-{{rmov['id']}}-estado"
-										class="form-control chosen-select mx-0 px-0" disabled>
-										<option value="" disabled>Selecione el Estado</option>
-										<option value="ACTIVE">Activa</option>
-										<option value="INACTIVE">Desactiva</option>
-										<option value="BLOCKED">Suspendida</option>
-									</select>
-									<script>
-										$('#kapp-{{rmov["id"]}}-estado').val("{{rmov['state']}}");
-										$("#kapp-{{rmov['id']}}-estado").chosen();
-									</script>
-								</p>
-							</td>
-							<td class="p-1 m-0" style="border-color: white;">
-								<input class="form-control form-control-sm" type="date"
-									id="kapp-{{rmov['id']}}-fecha-cobro" style="font-size:0.75rem;height:1.7rem;"
-									disabled value="{{rmov['fecha_cobro']}}">
-							</td>
-							<td class="p-1 m-0" style="border-color: white;">
-								<p class="p-0 m-0">
-									{{ rmov['dias_atraso'] }}</p>
-							</td>
-							<td class="p-1 m-0" style="border-color: white;">
-								<input class="form-control form-control-sm" type="input"
-									id="kapp-{{rmov['id']}}-licencias" style="font-size:0.75rem;height:1.7rem;"
-									placeholder="..." disabled value="{{rmov['licencias']}}">
-							</td>
-							<td class="p-1 m-0" style="border-color: white;">
-								<p class="p-0 m-0">
-									{{ rmov['cuentas_activas'] }}</p>
-							</td>
-
-							<td class="p-0 m-0" style="border: none;">
-
-							
-								<!--EDITAR KAPP    -->
-								<div id="kapp-{{rmov['id']}}-div-editar" class="col py-1">
-									<button id="btn-editar-kapp" name="btn-editar-kapp" type="submit"
-										class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
-										data-id-kapp="{{rmov['id']}}">
-										<img src="{{ url_for('static', filename='icons_svg/edit1.svg') }}"
-											alt="Editar" class="img inline p-0 m-0"
-											style="width:1.7rem;height:1.3rem;" title="Editar">
-									</button>
-								</div>
-								<!--GUARDAR KAPP -->
-								<div id="kapp-{{rmov['id']}}-div-guardar" class="col py-1" hidden>
-									<button id="btn-guardar-kapp" name="btn-guardar-kapp" type="submit"
-										class="btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
-										data-id-kapp="{{rmov['id']}}">
-										<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}"
-											alt="Guardar" class="img inline p-0 m-0"
-											style="width:1.7rem;height:1.3rem;" title="Guardar">
-									</button>
-								</div>
-
-								<!-- REGISTRAR PAGO -->
-								<div class="col py-1">
-									<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago"
-										type="submit" class="btn btn-primary p-0 m-0"
-										style="width:1.8rem;height:1.8rem;"
-										data-kapp-id="{{rmov['id']}}">
-										<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}"
-											alt="Registrar Pago" class="img inline p-0 m-0"
-											style="width:1.7rem;height:1.3rem;" title="btn-kapp-registrar-pago">
-									</button>
-								</div>
-				</td>
-						</tr>
-						{% endfor %}
-					<tr><td colspan="8"></td></tr>
-					<tr><td colspan="8"></td></tr>
-					<!--Ciclo KAPPs INACTIVAS-->
-					{% for rmov in kapps_info if rmov['state']=='INACTIVE': %}
-					<tr class="border p-0 m-0 alert-danger"
-					style="font-size:0.9rem;color:midnightblue;">
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">{{ rmov['id'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input"
-								id="kapp-{{rmov['id']}}-nombre" style="font-size:0.75rem;height:1.7rem;"
-								disabled value="{{rmov['name']}}">
+							<input class="form-control form-control-md" type="input" id="kapp-{{rmov['id']}}-nombre"
+								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['name']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
@@ -151,18 +64,17 @@
 							</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="date"
-								id="kapp-{{rmov['id']}}-fecha-cobro" style="font-size:0.75rem;height:1.7rem;"
-								disabled value="{{rmov['fecha_cobro']}}">
+							<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['id']}}-fecha-cobro"
+								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['fecha_cobro']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
 								{{ rmov['dias_atraso'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input"
-								id="kapp-{{rmov['id']}}-licencias" style="font-size:0.75rem;height:1.7rem;"
-								placeholder="..." disabled value="{{rmov['licencias']}}">
+							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['id']}}-licencias"
+								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
+								value="{{rmov['licencias']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
@@ -171,47 +83,128 @@
 
 						<td class="p-0 m-0" style="border: none;">
 
-						
+
 							<!--EDITAR KAPP    -->
 							<div id="kapp-{{rmov['id']}}-div-editar" class="col py-1">
 								<button id="btn-editar-kapp" name="btn-editar-kapp" type="submit"
 									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-id-kapp="{{rmov['id']}}">
-									<img src="{{ url_for('static', filename='icons_svg/edit1.svg') }}"
-										alt="Editar" class="img inline p-0 m-0"
-										style="width:1.7rem;height:1.3rem;" title="Editar">
+									data-kapp-id="{{rmov['id']}}">
+									<img src="{{ url_for('static', filename='icons_svg/edit1.svg') }}" alt="Editar"
+										class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar">
 								</button>
 							</div>
 							<!--GUARDAR KAPP -->
 							<div id="kapp-{{rmov['id']}}-div-guardar" class="col py-1" hidden>
 								<button id="btn-guardar-kapp" name="btn-guardar-kapp" type="submit"
 									class="btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-id-kapp="{{rmov['id']}}">
-									<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}"
-										alt="Guardar" class="img inline p-0 m-0"
-										style="width:1.7rem;height:1.3rem;" title="Guardar">
+									data-kapp-id="{{rmov['id']}}">
+									<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}" alt="Guardar"
+										class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Guardar">
 								</button>
 							</div>
 
 							<!-- REGISTRAR PAGO -->
 							<div class="col py-1">
-								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago"
-									type="submit" class="btn btn-primary p-0 m-0"
-									style="width:1.8rem;height:1.8rem;" data-id-user="{{rmov['id']}}"
-									data-id-kapp="{{rmov['id']}}">
+								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago" type="submit"
+									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+									data-kapp-id="{{rmov['id']}}">
 									<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}"
 										alt="Registrar Pago" class="img inline p-0 m-0"
 										style="width:1.7rem;height:1.3rem;" title="btn-kapp-registrar-pago">
 								</button>
 							</div>
-					</td>
+						</td>
 					</tr>
 					{% endfor %}
-		</tbody>
-		</table>
+					<tr>
+						<td colspan="8"></td>
+					</tr>
+					<tr>
+						<td colspan="8"></td>
+					</tr>
+					<!--Ciclo KAPPs INACTIVAS-->
+					{% for rmov in kapps_info if rmov['state']=='INACTIVE': %}
+					<tr class="border p-0 m-0 alert-danger" style="font-size:0.9rem;color:midnightblue;">
+						<td class="p-1 m-0" style="border-color: white;">
+							<p class="p-0 m-0">{{ rmov['id'] }}</p>
+						</td>
+						<td class="p-1 m-0" style="border-color: white;">
+							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['id']}}-nombre"
+								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['name']}}">
+						</td>
+						<td class="p-1 m-0" style="border-color: white;">
+							<p class="p-0 m-0">
+								<select name="kapp-{{rmov['id']}}-estado" id="kapp-{{rmov['id']}}-estado"
+									class="form-control chosen-select mx-0 px-0" disabled>
+									<option value="" disabled>Selecione el Estado</option>
+									<option value="ACTIVE">Activa</option>
+									<option value="INACTIVE">Desactiva</option>
+									<option value="BLOCKED">Suspendida</option>
+								</select>
+								<script>
+									$('#kapp-{{rmov["id"]}}-estado').val("{{rmov['state']}}");
+									$("#kapp-{{rmov['id']}}-estado").chosen();
+								</script>
+							</p>
+						</td>
+						<td class="p-1 m-0" style="border-color: white;">
+							<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['id']}}-fecha-cobro"
+								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['fecha_cobro']}}">
+						</td>
+						<td class="p-1 m-0" style="border-color: white;">
+							<p class="p-0 m-0">
+								{{ rmov['dias_atraso'] }}</p>
+						</td>
+						<td class="p-1 m-0" style="border-color: white;">
+							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['id']}}-licencias"
+								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
+								value="{{rmov['licencias']}}">
+						</td>
+						<td class="p-1 m-0" style="border-color: white;">
+							<p class="p-0 m-0">
+								{{ rmov['cuentas_activas'] }}</p>
+						</td>
+
+						<td class="p-0 m-0" style="border: none;">
+
+
+							<!--EDITAR KAPP    -->
+							<div id="kapp-{{rmov['id']}}-div-editar" class="col py-1">
+								<button id="btn-editar-kapp" name="btn-editar-kapp" type="submit"
+									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+									data-kapp-id="{{rmov['id']}}">
+									<img src="{{ url_for('static', filename='icons_svg/edit1.svg') }}" alt="Editar"
+										class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar">
+								</button>
+							</div>
+							<!--GUARDAR KAPP -->
+							<div id="kapp-{{rmov['id']}}-div-guardar" class="col py-1" hidden>
+								<button id="btn-guardar-kapp" name="btn-guardar-kapp" type="submit"
+									class="btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
+									data-kapp-id="{{rmov['id']}}">
+									<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}" alt="Guardar"
+										class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Guardar">
+								</button>
+							</div>
+
+							<!-- REGISTRAR PAGO -->
+							<div class="col py-1">
+								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago" type="submit"
+									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+									data-kapp-id="{{rmov['id']}}">
+									<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}"
+										alt="Registrar Pago" class="img inline p-0 m-0"
+										style="width:1.7rem;height:1.3rem;" title="btn-kapp-registrar-pago">
+								</button>
+							</div>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
 		</div>
 
-		
+
 		<!-- MODAL PARA CONFIRMACION DE MODIFICAR KAPP-->
 		<div class="modal fade" id="modal-crud-kapp" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
 			aria-hidden="true">
@@ -256,47 +249,72 @@
 						<p class="text-primary" style="font-size:0.85rem">Detalle de Pago</p>
 						<div class="form-row my-0 py-0">
 							<div class="form-group col-5 my-0 py-0">
-								<label class="text-primary my-0 py-0" style="font-size:1rem"
-									for="nombres"><b>Fecha Pago</b></label>
+								<label class="text-primary my-0 py-0" style="font-size:1rem" for="nombres"><b>Fecha
+										Pago</b></label>
 							</div>
 							<div class="form-group col-4 my-0 py-0">
-								<label class="text-primary my-0 py-0" style="font-size:1rem"
-									for="apellidos">Periodo a Pagar</label>
+								<label class="text-primary my-0 py-0" style="font-size:1rem" for="apellidos">Periodo a
+									Pagar</label>
 							</div>
 							<div class="form-group col-3 my-0 py-0">
-								<label class="text-primary my-0 py-0" style="font-size:1rem"
-									for="apellidos">Monto Factura</label>
+								<label class="text-primary my-0 py-0" style="font-size:1rem" for="apellidos">Monto
+									Factura</label>
 							</div>
 						</div>
-						
+
 						<div class="form-row my-0 py-0">
 							<div class="form-group col-5 my-0 py-0">
-								<input class="form-control form-control-sm my-0 py-0"
-									style="font-size:1rem" type="date" name="modal-kapp-pago-fecha" id="modal-kapp-pago-fecha"
-									placeholder="Fecha de pago">
+								<input class="form-control form-control-sm my-0 py-0" style="font-size:1rem" type="date"
+									name="modal-kapp-pago-fecha" id="modal-kapp-pago-fecha" placeholder="Fecha de pago">
 							</div>
 							<div class="form-group col-4 my-0 py-0">
-								<input class="form-control form-control-sm my-0 py-0" style="font-size:1rem" type="text"
-									name="modal-kapp-pago-periodo" id="modal-kapp-pago-periodo" placeholder="Periodo">
+								<input class="form-control form-control-sm my-0 py-0" style="font-size:1rem"
+									type="number" name="modal-kapp-pago-periodo" id="modal-kapp-pago-periodo"
+									placeholder="Periodo">
 							</div>
 							<div class="form-group col-3 my-0 py-0">
-								<input class="form-control form-control-sm my-0 py-0" style="font-size:1rem" type="text"
-									name="modal-kapp-pago-monto" id="modal-kapp-pago-monto" placeholder="Monto">
+								<input class="form-control form-control-sm my-0 py-0" style="font-size:1rem"
+									type="number" min=0 name="modal-kapp-pago-monto" id="modal-kapp-pago-monto"
+									placeholder="Monto">
 							</div>
+						</div>
+						<br>
+						<div class="col-12" style="text-align: right;">
+							<button id="modal-kapp-pago-btn-guardar" name="modal-kapp-pago-btn-guardar" type="button"
+								class="btn btn-primary" data-kapp-id="">Registrar Pago</button>
 						</div>
 					</div>
 					<div class="modal-footer">
 						<div class="container">
 							<div class="row ">
-								<div class="col-7 ">
-									<div id="modal-kapp-pago-guardar" class="alert alert-danger" role="alert"
-										style="font-size:0.85rem;display: none;">
-									</div>
-								</div>
-								<div class="col-5" style="text-align: right;">
-									<button id="modal-kapp-pago-cerrar" name="modal-kapp-pago-cerrar" type="button" class="btn btn-secondary" data-dismiss="modal"
+
+
+								<table class="table table-bordered col-12" id="modal-kapp-pagos-tabla" name="modal-kapp-pagos-tabla">
+									<thead class="bg-primary">
+										<tr style="text-align: center;color: rgb(255, 255, 255);">
+											<th scope="col" class="p-1 mx-1">
+												<p style="font-size:1rem" class="p-0 m-0">Periodo Pagado
+											</th>
+											<th scope="col" class="p-1 mx-1">
+												<p style="font-size:1rem" class="p-0 m-0">Fecha de Pago
+											</th>
+											<th scope="col" class="p-1 mx-1">
+												<p style="font-size:1rem" class="p-0 m-0">Monto
+											</th>
+											<th scope="col" class="p-1 mx-1">
+											</th>
+										</tr>
+									</thead>
+									<tbody id="modal-kapp-pagos-tabla-body" name="modal-kapp-pagos-tabla-body">
+									</tbody>
+								</table>
+
+
+								<div class="col-12" style="text-align: right;">
+
+									<button id="modal-kapp-pago-cerrar" name="modal-kapp-pago-cerrar" type="button"
+										class="btn btn-secondary" data-dismiss="modal"
 										style="display: inline-block;">Cerrar</button>
-									<button id="modal-kapp-pago-btn-guardar" name="modal-kapp-pago-btn-guardar" type="button" class="btn btn-primary">Registrar Pago</button>
 								</div>
 							</div>
 						</div>
