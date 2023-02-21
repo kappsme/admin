@@ -123,12 +123,13 @@ def home():
 
 
 
-@kapps_admin.route("/crud_kapp", methods=["POST"])
+@kapps_admin.route("/crud_kapp", methods=["POST","GET"])
 def crud_kapp():
+    result, reason, data = 'failed','No Action Specified', None
+    mysqlConn = DBConn()
+    cursor = mysqlConn.cursor(dictionary=True)
     pl = json.loads(request.form.get("parametro"))
     if  pl["accion"] == "0":  # ACTUALIZA KAPP
-        mysqlConn = DBConn()
-        cursor = mysqlConn.cursor()
         cursor.execute(
             "update kapps_db.kapps set name=%s, state=%s, licencias=%s, fecha_cobro=%s where id=%s",
             (
@@ -139,9 +140,28 @@ def crud_kapp():
                 pl["kapp_id"],
             ),
         )
-        cursor.close()
-        return {'result':'success', 'reason': None}
-    return {'result':'failed', 'reason':'No Action Specified'}
+        result, reason = 'success', None
+    elif pl["accion"] == "1":  # DATOS ULTIMO PAGO
+        cursor.execute(
+            """select date_format(date_add(date_format(concat(max(periodo),'01'),'%Y%m%d'),INTERVAL 1 MONTH),'%Y%m') periodo_sugerido
+                from kapps_db.pagos where kapp_id=%s;""",
+            (
+                pl["kapp_id"],
+            ),
+        )
+        response_periodo_sugerido = cursor.fetchone()
+        cursor.execute(
+            """select * from kapps_db.pagos where kapp_id=%s
+                order by periodo desc limit 12;""",
+            (
+                pl["kapp_id"],
+            ),
+        )
+        response_pagos = cursor.fetchall()
+
+        result, reason, data = 'success', None, {'periodo_sugerido':response_periodo_sugerido['periodo_sugerido'], 'pagos':[response_pagos]}
+    cursor.close()
+    return {'result' : result, 'reason' : reason, 'data' : data}
 
 
 
