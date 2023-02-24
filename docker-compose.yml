@@ -19,7 +19,7 @@ services:
     ports:
       - '3306:3306'
     volumes:
-      - ../kappsDB:/db
+      - ../kappsdb:/db
   kappsdbsetup:
     image: mysql:5.7.40
     depends_on:
