@@ -1,8 +1,8 @@
 docker network create tx-network
 docker build -t tx .
 
-docker build -t kennycarcamo/kapps:tx .
-docker push kennycarcamo/kapps:tx
+docker build -t kennycarcamo/kapps:admin .
+docker push kennycarcamo/kapps:admin 
 
 docker run -dp 3000:3000 -v "$(pwd):/app" admin
 
