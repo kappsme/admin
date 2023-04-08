@@ -162,8 +162,11 @@ def crud_kapp():
         result, reason, data = 'success', None, None
     elif pl["accion"] == "3":  # DATOS PAGOS
         cursor.execute(
-            """select id, kapp_id, periodo, monto, date_format(fecha_registro,'%Y %M %d') fecha_registro, estado, userid, userid_elimina, fecha_elimina from kapps_db.pagos where kapp_id=%s
-                order by periodo desc limit 12;""",
+            """select p.id, p.kapp_id, periodo, monto, date_format(fecha_registro,'%Y %M %d') fecha_registro, case when p.estado=0 then 'Desactivo' else 'Activo' end estado
+                , userid, ka.username, ka2.username username_elimina, fecha_elimina 
+                from kapps_db.pagos p left join kapps_db.accounts ka on ka.id=p.userid
+                left join kapps_db.accounts ka2 on ka2.id=p.userid_elimina
+                where p.kapp_id=%s order by periodo desc limit 12;""",
             (
                 pl["kapp_id"],
             ),
@@ -177,11 +180,16 @@ def crud_kapp():
 
 
 
-
 @kapps_admin.route("/nueva", methods=["POST"])
 def nueva():
     # if 'loggedin' in session and request.method == 'POST':
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    mysqlConn = DBConn()
+    cursor = mysqlConn.cursor(dictionary=True)
+    cursor.execute('SET lc_time_names = "es_ES"')
+    cursor.execute("""select a.id, a.name, a.alt, a.html_initial_render_state, a.par1, a.par2, a.par3 ,at.tag, at.html_type 
+        from kapps_db.tx_atts a left join kapps_db.tx_atts_types at on at.id=a.id_type
+        where id_kapp=%s and a.state=1 order by a.rank asc;""",aplication_id)
+    atts = cursor.fetchall()
     cursor.execute("SELECT nombre FROM marcas where estado=1")
     marcas = cursor.fetchall()
     cursor.execute("SELECT nombre FROM tipos_equipo where estado=1")
@@ -190,8 +198,11 @@ def nueva():
     zonas = cursor.fetchall()
     cursor.close()
     return render_template(
-        "nueva.html", marcas=marcas, tipos_equipo=tipos_equipo, zonas=zonas
+        "nueva.html", atts=atts, marcas=marcas, tipos_equipo=tipos_equipo, zonas=zonas
     )
+
+
+
 
 
 @kapps_admin.route("/busqueda_cliente", methods=["POST"])

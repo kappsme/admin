@@ -324,6 +324,34 @@
 		</div>
 
 
+		<!-- MODAL PARA CONFIRMACION DE ELIMINACION DE PAGO-->
+		<div class="modal fade" id="modal-crud-pago" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+			aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title text-primary" style="font-size:1.3rem">
+							Eliminar Pago
+						</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+
+						<label id="modal-crud-kapp-body" class="text-primary my-0" style="font-size:1.2rem">¿Está seguro que desea eliminar este pago?</label>
+						<!-- <input id="modal-crud-kapp-id" name="modal-crud-kapp-id" type="hidden"> -->
+						<input id="modal-crud-pago-kapp-id" name="modal-crud-pago-id" type="hidden">
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+						<button id="modal-crud-pago-confirmacion" class="btn btn-primary">Confirmar</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
 	</div>
 </div>
 
