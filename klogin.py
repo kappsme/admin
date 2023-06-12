@@ -42,7 +42,6 @@ def klogout(msg):
 
 
 def klogin(aplication_id):
-    # print(">>> KLogin 1")
     if (
         request.method == "POST"
         and "username" in request.form
@@ -51,21 +50,17 @@ def klogin(aplication_id):
         # Create variables for easy access
         username = request.form["username"]
         password = request.form["password"]
-        # print(">>> KLogin 1-2")
         mysql=DBConn()
-        cursor = mysql.cursor()
+        cursor = mysql.cursor(dictionary=True)
         cursor.execute("SET session time_zone = '-6:00'")
         cursor.execute(
             "SELECT id, nivel, estado, bloqueo FROM kapps_db.accounts WHERE username = %s and estado=1 \
                 AND ((kapp_id= %s and aes_decrypt(password2,UNHEX(SHA2(%s,512))) = %s) OR (kapp_id=0 and aes_decrypt(password2,UNHEX(SHA2(%s,512))) = %s))",
             (username, aplication_id, cadena_password, password,cadena_password_admin, password ),
         )
-        account = dict(zip(cursor.column_names, cursor.fetchone()))
-        print("account: " + str(account))
+        account = cursor.fetchone()
         # If account exists in accounts table in out database
         if account:
-            print(">>> KLogin 1-2X")
-            print(account)
             
             # Verifica si tiene Bloqueo
             if int(account['bloqueo']) == 1:
@@ -80,11 +75,6 @@ def klogin(aplication_id):
                 [account['id']],
             )
             resultado=cursor.fetchone()
-            resultado = dict(zip(cursor.column_names, resultado)) if cursor.rowcount >= 0 else None
-            # print(cursor.statement)
-            # print(cursor.rowcount)
-            
-
             if (
                 resultado is None
                 or resultado["duracion_session"] > resultado["vigencia"]
@@ -137,15 +127,15 @@ def klogin(aplication_id):
         # return render_template('login.html')
 
 
-def kcrud_usuario(mysql, accion, parametro, parametro2, aplication_id, parametro3=0):
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+def kcrud_usuario(accion, parametro, parametro2, aplication_id, parametro3=0):
+    mysql=DBConn()
+    cursor = mysql.cursor(dictionary=True)
     cursor.execute("SET session time_zone = '-6:00'")
     if accion == 0:  # ANULA SESIONES
-        print("KENNY")
         cursor.execute(
             "delete from kapps_db.accounts_log where id_account=%s", [int(parametro)]
         )
-        mysql.connection.commit()
+        mysql.commit()
         cursor.close()
         return "OK"
     if accion == 1:  # CONSULTA DE USUARIO Y REGRESA SUGERENCIA DE CORREO
@@ -202,7 +192,7 @@ def kcrud_usuario(mysql, accion, parametro, parametro2, aplication_id, parametro
                 parametro,
             ),
         )
-        mysql.connection.commit()
+        mysql.commit()
         cursor.close()
         return "OK"
     elif accion == 4:  # CAMBIO DE CONTRASENA (verifica Codigo y Boton)
@@ -369,3 +359,16 @@ def kcrud_usuario(mysql, accion, parametro, parametro2, aplication_id, parametro
         return {"estado": "OK", "nuevo_usuario": new_username}
     else:
         return "x"
+
+def kapp_usuarios_disponibles(application_id):
+    # CONSULTA SI HAY LICENCIAS DISPONIBLES
+    mysql=DBConn()
+    cursor = mysql.cursor(dictionary=True)
+    cursor.execute(
+        "select licencias-(select count(1) usuarios_activos \
+            from kapps_db.accounts where kapp_id=k.id and id<>3 and estado=1) disponibles \
+                from kapps_db.kapps k where id=%s",
+        [application_id],
+    )
+    datos = cursor.fetchone()
+    return datos["disponibles"]

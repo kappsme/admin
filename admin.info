@@ -1,0 +1,14 @@
+# sino esta creada la red con la base
+docker network create --subnet=172.25.0.0/16 kappsnet  
+
+docker build -t admin .
+docker run -dp 3000:3000 --net kappsnet -v "$(pwd):/app" -ti admin /bin/bash
+
+docker exec -it b94ef3169cd4 /bin/bash
+
+
+
+
+# Activar PING en el bash (Para etga)
+apt-get update -y
+apt-get install -y iputils-ping

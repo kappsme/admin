@@ -3,7 +3,9 @@ FROM python:3.8
 WORKDIR /app
 
 COPY requirements.txt .
-COPY .env-admin .
+#COPY .env-admin .
+COPY .env .
+
 
 RUN python -m pip install pip==22.3.1
 RUN pip install -r requirements.txt

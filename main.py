@@ -2675,7 +2675,6 @@ def crud_usuario():
         )
     else:
         resultado = klogin.kcrud_usuario(
-            mysql=mysql,
             accion=accion,
             parametro=parametro,
             parametro2=parametro2,
@@ -2699,7 +2698,8 @@ def crud_usuario():
 
 @kapps_admin.route("/usuarios", methods=["POST"])
 def usuarios():
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    mysqlConn = DBConn()
+    cursor = mysqlConn.cursor(dictionary=True)
     cursor.execute('SET lc_time_names = "es_ES"')
     # VERIFICAR SI ES ADMINISTRADOR (NIVEL 1)
     cursor.execute("select nivel from kapps_db.accounts where id=%s", [session["id"]])
@@ -2716,17 +2716,16 @@ def usuarios():
             # CANTIDAD DE USUARIOS ACTIVOS EN LA APLICACION
             cursor.execute(
                 "select count(1) usuarios_activos  \
-                from kapps_db.accounts where kapp_id=%s and id<>3 and estado=1",
-                [aplication_id],
+                from kapps_db.accounts where id<>3 and estado=1",
+                [],
             )
             datos = cursor.fetchone()
             usuarios_activos = datos["usuarios_activos"]
             # INFORMACION DE USUARIOS DE LA APLICACION
             cursor.execute(
-                'select id, name, lastname, username, email, ifnull(phone1,"") telefono, nivel, estado, bloqueo, vigencia \
-                from kapps_db.accounts where kapp_id=%s and id<>3 order by estado desc,nivel asc, id',
-                [aplication_id],
-            )
+                """select k.name empresa, a.id, a.name, lastname, username, email, ifnull(phone1,"") telefono, nivel, estado, bloqueo, vigencia 
+                        from kapps_db.accounts a left join kapps_db.kapps k on k.id=a.kapp_id 
+                    where a.id<>3 order by kapp_id asc, estado desc,nivel asc, a.id""")
             datos_usuarios = cursor.fetchall()
             cursor.close()
 
@@ -2744,8 +2743,8 @@ def usuarios():
             # CONSULTA SI HAY LICENCIAS DISPONIBLES
             return str(datos_base.kapp_usuarios_disponibles(mysql, aplication_id))
         if formulario["accion"] == "3":  # CREAR USUARIO
-            usuarios_disponibles = datos_base.kapp_usuarios_disponibles(
-                mysql, aplication_id
+            usuarios_disponibles = klogin.kapp_usuarios_disponibles(
+                    aplication_id
             )
             if usuarios_disponibles > 0:
                 datos_nuevo_usuario = {
@@ -2763,12 +2762,12 @@ def usuarios():
             else:
                 return "NO-DISPONIBILIDAD"
         if formulario["accion"] == "4":  # ACTIVAR USUARIO
-            usuarios_disponibles = datos_base.kapp_usuarios_disponibles(
-                mysql, aplication_id
+            usuarios_disponibles = klogin.kapp_usuarios_disponibles(
+               aplication_id
             )
             if usuarios_disponibles > 0:
                 cursor.execute("update kapps_db.accounts set estado = 1 where id=%s", [formulario["id_usuario"]])
-                mysql.connection.commit()
+                mysqlConn.commit()
                 cursor.close()
                 return "OK"
             else:
