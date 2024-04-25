@@ -108,13 +108,24 @@ def home():
                 , count(distinct ka.username) "CUENTAS ACTIVAS" 
                 , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
                 , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
+                , configuracion CONF
             from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id 
             left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1 
-        group by k.id, k.name, k.fecha_cobro, state, licencias, dias_vencimiento""",
+        group by k.id, k.name, k.fecha_cobro, state, licencias, dias_vencimiento, configuracion""",
         )
         kapps_info, columnas = cursor.fetchall(), cursor.column_names
         kapps_morosas = len(['x' for kapp in kapps_info if kapp['DIAS ATRASO']>=0])
+
+        cursor.execute(
+            """select * from kapps_db.kapp_conf_cat """,
+        )
+        kapps_cat_info = cursor.fetchall()
         cursor.close()
+
+        for reg in kapps_info:
+            reg['CONF'] = [[cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)] for x in reg['CONF'].split(",")]
+                #= [cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)]
+             
 
         return render_template(
             "home.html"
