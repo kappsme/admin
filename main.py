@@ -35,7 +35,7 @@ import klogin
 from dotenv import load_dotenv
 import mysql.connector
 import json
-import requests
+#import requests
 
 # ENV Variables
 load_dotenv()
@@ -100,23 +100,27 @@ def home():
         cursor.execute('SET lc_time_names = "es_ES"')
         # VERIFICA PAGO DE USO DE KAPP!
         cursor.execute(
-            """select k.id, k.name, date(k.fecha_cobro) fecha_cobro, state, licencias 
-			, count(distinct ka.username) cuentas_activas 
-            , ifnull(datediff(now(),DATE_ADD(date_format(concat(ifnull(max(periodo), CAST(date_format(fecha_cobro,"%Y%m") AS CHAR CHARACTER SET utf8))
-                    ,CAST(date_format(fecha_cobro,"%d") AS CHAR CHARACTER SET utf8)),"%Y%m%d"),INTERVAL 1 MONTH)),0) dias_atraso
-            , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
-            , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
+            """select k.id "ID KAPP", k.name "NOMBRE", state "ESTADO", date(k.fecha_cobro) "FECHA COBRO"
+                , ifnull(datediff(now(),DATE_ADD(date_format(concat(ifnull(max(periodo), CAST(date_format(fecha_cobro,"%Y%m") AS CHAR CHARACTER SET utf8))
+                        ,CAST(date_format(fecha_cobro,"%d") AS CHAR CHARACTER SET utf8)),"%Y%m%d"),INTERVAL 1 MONTH)),0) "DIAS ATRASO" 
+                , licencias "LICENCIAS" 
+                , dias_vencimiento "DIAS VENCIMIENTO"
+                , count(distinct ka.username) "CUENTAS ACTIVAS" 
+                , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
+                , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
             from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id 
             left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1 
-        group by k.id, k.name, k.fecha_cobro, state, licencias""",
+        group by k.id, k.name, k.fecha_cobro, state, licencias, dias_vencimiento""",
         )
-        kapps_info = cursor.fetchall()
-        kapps_morosas = len([kapp['id'] for kapp in kapps_info if kapp['dias_atraso']>=0])
+        kapps_info, columnas = cursor.fetchall(), cursor.column_names
+        kapps_morosas = len(['x' for kapp in kapps_info if kapp['DIAS ATRASO']>=0])
         cursor.close()
+
         return render_template(
             "home.html"
-            ,kapps_info=kapps_info
-            ,kapps_morosas=kapps_morosas
+            , kapps_info=kapps_info
+            , kapps_morosas=kapps_morosas
+            , columnas = columnas
         )
     else:
         return klogin.klogout(msg="Sesión Caducada!")
@@ -132,12 +136,13 @@ def crud_kapp():
     pl = json.loads(request.form.get("parametro"))
     if  pl["accion"] == "0":  # ACTUALIZA KAPP
         cursor.execute(
-            "update kapps_db.kapps set name=%s, state=%s, licencias=%s, fecha_cobro=%s where id=%s",
+            "update kapps_db.kapps set name=%s, state=%s, licencias=%s, fecha_cobro=%s, dias_vencimiento=%s where id=%s",
             (
                 pl["nombre"],
                 pl["estado"],
                 pl["licencias"],
                 pl["fecha_cobro"],
+                pl["vencimiento"],
                 pl["kapp_id"],
             ),
         )

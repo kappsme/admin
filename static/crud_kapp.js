@@ -35,6 +35,7 @@ $(document).ready(function () {
         document.getElementById("kapp-" + kappId + "-licencias").disabled = false;
         document.getElementById("kapp-" + kappId + "-div-editar").hidden = true;
         document.getElementById("kapp-" + kappId + "-div-guardar").hidden = false;
+        document.getElementById("kapp-" + kappId + "-vencimiento").disabled = false;
         $("#kapp-" + kappId + "-estado").trigger("chosen:updated");
     });
 
@@ -57,7 +58,7 @@ $(document).ready(function () {
                 suspension = "<br><br>La KAPP se suspenderá. Ningún usuario tendrá acceso.<br><br>";
             }
             var bloqueo = 0;
-            var datos = JSON.stringify({ accion: '0', kapp_id: kappId, nombre: $('#kapp-' + kappId + '-nombre').val(), estado: $('#kapp-' + kappId + '-estado').val(), fecha_cobro: $('#kapp-' + kappId + '-fecha-cobro').val(), licencias: $('#kapp-' + kappId + '-licencias').val() });
+            var datos = JSON.stringify({ accion: '0', kapp_id: kappId, nombre: $('#kapp-' + kappId + '-nombre').val(), estado: $('#kapp-' + kappId + '-estado').val(), fecha_cobro: $('#kapp-' + kappId + '-fecha-cobro').val(), licencias: $('#kapp-' + kappId + '-licencias').val(), vencimiento: $('#kapp-' + kappId + '-vencimiento').val() });
 
             $("#modal-crud-kapp-body").html("La KAPP <em>" + kappId + "</em> será modificada." + desactivacion + "<br><br>¿Desea continuar?");
             $("#modal-crud-kapp-accion").val(0); // GUARDAR KAPP

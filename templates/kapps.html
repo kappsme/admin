@@ -9,48 +9,30 @@
 			<table class="table table-bordered">
 				<thead class="bg-primary">
 					<tr style="text-align: center;color: rgb(255, 255, 255);">
+						{% for col in columnas if col not in ['ULTIMOPAGO_MES','ULTIMOPAGO_YEAR']: %}
 						<th scope="col" class="p-1 mx-1">
-							<p style="font-size:1rem" class="p-0 m-0">ID KAPP
+							<p style="font-size:1rem" class="p-0 m-0">{{ col }}</p>
 						</th>
-						<th scope="col" class="p-1 mx-1">
-							<p style="font-size:1rem" class="p-0 m-0">Cliente
-						</th>
-						<th scope="col" class="p-1 mx-1">
-							<p style="font-size:1rem" class="p-0 m-0">Estado
-						</th>
-						<th scope="col" class="p-1 mx-1">
-							<p style="font-size:1rem" class="p-0 m-0">Fecha de Corte
-						</th>
-						<th scope="col" class="p-1 mx-1">
-							<p style="font-size:1rem" class="p-0 m-0">Días Atraso
-						</th>
-						<th scope="col" class="p-1 mx-1">
-							<p style="font-size:1rem" class="p-0 m-0">Licencias
-						</th>
-						<th scope="col" class="p-1 mx-1">
-							<p style="font-size:1rem" class="p-0 m-0">Usuarios
-						</th>
-						<th scope="col" class="p-1 mx-1">
-						</th>
+						{% endfor %}
 					</tr>
 				</thead>
 				<tbody>
 					<!--Ciclo KAPPs Activas/Suspendidas-->
-					{% for rmov in kapps_info if rmov['state']!='INACTIVE': %}
+					{% for rmov in kapps_info if rmov['ESTADO']!='INACTIVE': %}
 					<tr class="border p-0 m-0
-						{% if rmov['state']=='BLOCKED': %} alert-warning
-						{% elif rmov['dias_atraso']>=1: %} alert-danger
+						{% if rmov['ESTADO']=='BLOCKED': %} alert-warning
+						{% elif rmov['DIAS ATRASO']>=1: %} alert-danger
 						{% endif %} " style="font-size:0.9rem;color:midnightblue;">
 						<td class="p-1 m-0" style="border-color: white;">
-							<p class="p-0 m-0">{{ rmov['id'] }}</p>
+							<p class="p-0 m-0">{{ rmov['ID KAPP'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-md" type="input" id="kapp-{{rmov['id']}}-nombre"
-								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['name']}}">
+							<input class="form-control form-control-md" type="input" id="kapp-{{rmov['ID KAPP']}}-nombre"
+								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['NOMBRE']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
-								<select name="kapp-{{rmov['id']}}-estado" id="kapp-{{rmov['id']}}-estado"
+								<select name="kapp-{{rmov['ID KAPP']}}-estado" id="kapp-{{rmov['ID KAPP']}}-estado"
 									class="form-control chosen-select mx-0 px-0" disabled>
 									<option value="" disabled>Selecione el Estado</option>
 									<option value="ACTIVE">Activa</option>
@@ -58,46 +40,51 @@
 									<option value="BLOCKED">Suspendida</option>
 								</select>
 								<script>
-									$('#kapp-{{rmov["id"]}}-estado').val("{{rmov['state']}}");
-									$("#kapp-{{rmov['id']}}-estado").chosen();
+									$('#kapp-{{rmov["ID KAPP"]}}-estado').val("{{rmov['ESTADO']}}");
+									$("#kapp-{{rmov['ID KAPP']}}-estado").chosen();
 								</script>
 							</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['id']}}-fecha-cobro"
-								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['fecha_cobro']}}">
+							<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['ID KAPP']}}-fecha-cobro"
+								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['FECHA COBRO']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
-								{{ rmov['dias_atraso'] }}</p>
+								{{ rmov['DIAS ATRASO'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['id']}}-licencias"
+							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-licencias"
 								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
-								value="{{rmov['licencias']}}">
+								value="{{rmov['LICENCIAS']}}">
+						</td>
+						<td class="p-1 m-0" style="border-color: white;">
+							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-vencimiento"
+								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
+								value="{{rmov['DIAS VENCIMIENTO']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
-								{{ rmov['cuentas_activas'] }}</p>
+								{{ rmov['CUENTAS ACTIVAS'] }}</p>
 						</td>
 
 						<td class="p-0 m-0" style="border: none;">
 
 
 							<!--EDITAR KAPP    -->
-							<div id="kapp-{{rmov['id']}}-div-editar" class="col py-1">
+							<div id="kapp-{{rmov['ID KAPP']}}-div-editar" class="col py-1">
 								<button id="btn-editar-kapp" name="btn-editar-kapp" type="submit"
 									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-kapp-id="{{rmov['id']}}">
+									data-kapp-id="{{rmov['ID KAPP']}}">
 									<img src="{{ url_for('static', filename='icons_svg/edit1.svg') }}" alt="Editar"
 										class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar">
 								</button>
 							</div>
 							<!--GUARDAR KAPP -->
-							<div id="kapp-{{rmov['id']}}-div-guardar" class="col py-1" hidden>
+							<div id="kapp-{{rmov['ID KAPP']}}-div-guardar" class="col py-1" hidden>
 								<button id="btn-guardar-kapp" name="btn-guardar-kapp" type="submit"
 									class="btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-kapp-id="{{rmov['id']}}">
+									data-kapp-id="{{rmov['ID KAPP']}}">
 									<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}" alt="Guardar"
 										class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Guardar">
 								</button>
@@ -107,7 +94,7 @@
 							<div class="col py-1">
 								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago" type="submit"
 									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-kapp-id="{{rmov['id']}}">
+									data-kapp-id="{{rmov['ID KAPP']}}">
 									<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}"
 										alt="Registrar Pago" class="img inline p-0 m-0"
 										style="width:1.7rem;height:1.3rem;" title="btn-kapp-registrar-pago">
@@ -123,18 +110,18 @@
 						<td colspan="8"></td>
 					</tr>
 					<!--Ciclo KAPPs INACTIVAS-->
-					{% for rmov in kapps_info if rmov['state']=='INACTIVE': %}
+					{% for rmov in kapps_info if rmov['ESTADO']=='INACTIVE': %}
 					<tr class="border p-0 m-0 alert-danger" style="font-size:0.9rem;color:midnightblue;">
 						<td class="p-1 m-0" style="border-color: white;">
-							<p class="p-0 m-0">{{ rmov['id'] }}</p>
+							<p class="p-0 m-0">{{ rmov['ID KAPP'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['id']}}-nombre"
-								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['name']}}">
+							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-nombre"
+								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['NOMBRE']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
-								<select name="kapp-{{rmov['id']}}-estado" id="kapp-{{rmov['id']}}-estado"
+								<select name="kapp-{{rmov['ID KAPP']}}-estado" id="kapp-{{rmov['ID KAPP']}}-estado"
 									class="form-control chosen-select mx-0 px-0" disabled>
 									<option value="" disabled>Selecione el Estado</option>
 									<option value="ACTIVE">Activa</option>
@@ -142,46 +129,50 @@
 									<option value="BLOCKED">Suspendida</option>
 								</select>
 								<script>
-									$('#kapp-{{rmov["id"]}}-estado').val("{{rmov['state']}}");
-									$("#kapp-{{rmov['id']}}-estado").chosen();
+									$('#kapp-{{rmov["ID KAPP"]}}-estado').val("{{rmov['ESTADO']}}");
+									$("#kapp-{{rmov['ID KAPP']}}-estado").chosen();
 								</script>
 							</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['id']}}-fecha-cobro"
-								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['fecha_cobro']}}">
+							<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['ID KAPP']}}-fecha-cobro"
+								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['FECHA COBRO']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
-								{{ rmov['dias_atraso'] }}</p>
+								{{ rmov['DIAS ATRASO'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['id']}}-licencias"
+							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-licencias"
 								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
-								value="{{rmov['licencias']}}">
+								value="{{rmov['LICENCIAS']}}">
+						</td>
+
+						<td class="p-1 m-0" style="border-color: white;">
+							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-vencimiento"
+								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
+								value="{{rmov['DIAS VENCIMIENTO']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
-								{{ rmov['cuentas_activas'] }}</p>
+								{{ rmov['CUENTAS ACTIVAS'] }}</p>
 						</td>
 
 						<td class="p-0 m-0" style="border: none;">
-
-
 							<!--EDITAR KAPP    -->
-							<div id="kapp-{{rmov['id']}}-div-editar" class="col py-1">
+							<div id="kapp-{{rmov['ID KAPP']}}-div-editar" class="col py-1">
 								<button id="btn-editar-kapp" name="btn-editar-kapp" type="submit"
 									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-kapp-id="{{rmov['id']}}">
+									data-kapp-id="{{rmov['ID KAPP']}}">
 									<img src="{{ url_for('static', filename='icons_svg/edit1.svg') }}" alt="Editar"
 										class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar">
 								</button>
 							</div>
 							<!--GUARDAR KAPP -->
-							<div id="kapp-{{rmov['id']}}-div-guardar" class="col py-1" hidden>
+							<div id="kapp-{{rmov['ID KAPP']}}-div-guardar" class="col py-1" hidden>
 								<button id="btn-guardar-kapp" name="btn-guardar-kapp" type="submit"
 									class="btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-kapp-id="{{rmov['id']}}">
+									data-kapp-id="{{rmov['ID KAPP']}}">
 									<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}" alt="Guardar"
 										class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Guardar">
 								</button>
@@ -191,7 +182,7 @@
 							<div class="col py-1">
 								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago" type="submit"
 									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-kapp-id="{{rmov['id']}}">
+									data-kapp-id="{{rmov['ID KAPP']}}">
 									<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}"
 										alt="Registrar Pago" class="img inline p-0 m-0"
 										style="width:1.7rem;height:1.3rem;" title="btn-kapp-registrar-pago">

@@ -13,8 +13,8 @@
                 </strong>
             </div>
             <div class="toast-body text-danger" style="font-size:0.85rem;">
-                {% for kapp in kapps_info if kapp['dias_atraso']>=0 and kapp['state']!='INACTIVE': %}
-                {{kapp['name']}} [{{kapp['id']}}] (Último Pago: {{kapp['ULTIMOPAGO_YEAR']}}-{{kapp['ULTIMOPAGO_MES']}})<br>
+                {% for kapp in kapps_info if kapp['DIAS ATRASO']>=0 and kapp['ESTADO']!='INACTIVE': %}
+                {{kapp['NOMBRE']}} [{{kapp['ID KAPP']}}] (Último Pago: {{kapp['ULTIMOPAGO_YEAR']}}-{{kapp['ULTIMOPAGO_MES']}})<br>
                 {% endfor %}   
             </div>
         </div>
