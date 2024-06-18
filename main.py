@@ -40,14 +40,12 @@ import json
 # ENV Variables
 load_dotenv()
 
-aplication_id = os.getenv('KAPP_ID')
-
-
 
 kapps_admin = Flask(__name__)
 kapps_admin.config["PDF_FOLDER"] = "templates/pdfs/"
 kapps_admin.config["JSON_SORT_KEYS"] = False
 
+kapps_admin.config["application_id"] ='0'
 
 # CONEXION A BASE DE DATOS
 def DBConn():
@@ -89,7 +87,10 @@ mail = Mail(kapps_admin)
 @kapps_admin.route("/login", methods=["GET", "POST"])
 @kapps_admin.route("/", methods=["GET", "POST"])
 def login():
-    return klogin.klogin(aplication_id)
+    ## ADMIN
+    return klogin.klogin(kapps_admin.config["application_id"])
+    
+
 
 
 @kapps_admin.route("/home/", methods=["GET", "POST"])
@@ -120,7 +121,23 @@ def home():
             """select * from kapps_db.kapp_conf_cat """,
         )
         kapps_cat_info = cursor.fetchall()
-        cursor.close()
+
+        # KAPP INFO
+        cursor.execute(
+            """select a.name name, a.username 
+            from kapps_db.accounts a where a.id = %s""",
+            [session["id"]],
+        )
+        account = cursor.fetchone()
+        # DEFINE AMBIENTE SEGUN BASE DE DATOS
+        # if app_tx.config["MYSQL_DB"] == "tx_pruebas":
+        #     session["ambiente"] = "PRUEBAS"
+        # else:
+        session["ambiente"] = "PRODUCCION"
+
+        session["clave"] = 'ADMIN' # CODIGO DISTINGUE LA KAPP
+        session["username"] = account["username"]
+
 
         for reg in kapps_info:
             reg['CONF'] = [[cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)] for x in reg['CONF'].split(",")]
@@ -144,8 +161,9 @@ def crud_kapp():
     mysqlConn = DBConn()
     cursor = mysqlConn.cursor(dictionary=True)
     cursor.execute('SET lc_time_names = "es_ES"')
-    pl = json.loads(request.form.get("parametro"))
-    if  pl["accion"] == "0":  # ACTUALIZA KAPP
+    accion = request.json["accion"]
+
+    if accion  == "0":  # ACTUALIZA KAPP
         cursor.execute(
             "update kapps_db.kapps set name=%s, state=%s, licencias=%s, fecha_cobro=%s, dias_vencimiento=%s where id=%s",
             (
@@ -158,25 +176,25 @@ def crud_kapp():
             ),
         )
         result, reason = 'success', None
-    elif pl["accion"] == "1":  # DATOS ULTIMO PAGO
+    elif accion == "1":  # DATOS ULTIMO PAGO
         cursor.execute(
             """select date_format(date_add(date_format(concat(max(periodo),'01'),'%Y%m%d'),INTERVAL 1 MONTH),'%Y%m') periodo_sugerido
                 from kapps_db.pagos where kapp_id=%s;""",
             (
-                pl["kapp_id"],
+               request.json["kapp_id"],
             ),
         )
         response_periodo_sugerido = cursor.fetchone()
         result, reason, data = 'success', None, {'periodo_sugerido' : response_periodo_sugerido['periodo_sugerido']}
-    elif pl["accion"] == "2":  # REGISTRAR PAGO
+    elif accion == "2":  # REGISTRAR PAGO
         cursor.execute(
             """ insert into kapps_db.pagos (kapp_id, monto, periodo, fecha_registro, estado, userid) values (%s,%s,%s,%s,1,%s) """,
             (
-                pl["kapp_id"], pl["monto"] , pl["periodo"], pl["fecha"],session["id"],
+                request.json["kapp_id"], pl["monto"] , pl["periodo"], pl["fecha"],session["id"],
             ),
         )
         result, reason, data = 'success', None, None
-    elif pl["accion"] == "3":  # DATOS PAGOS
+    elif accion == "3":  # DATOS PAGOS
         cursor.execute(
             """select p.id, p.kapp_id, periodo, monto, date_format(fecha_registro,'%Y %M %d') fecha_registro, case when p.estado=0 then 'Desactivo' else 'Activo' end estado
                 , userid, ka.username, ka2.username username_elimina, fecha_elimina 
@@ -184,7 +202,7 @@ def crud_kapp():
                 left join kapps_db.accounts ka2 on ka2.id=p.userid_elimina
                 where p.kapp_id=%s order by periodo desc limit 12;""",
             (
-                pl["kapp_id"],
+                request.json["kapp_id"],
             ),
         )
         response_pagos = cursor.fetchall()
@@ -2572,14 +2590,15 @@ def logout():
 # CADA VEZ QUE SE LLAME A ALGUNA DEF
 @kapps_admin.before_request
 def before_request_func():
-    print("")
-    #print(":::::----------------------------------------------------------------------:::::")
+    print(":::::-BEFORE REQUEST FUNC-:::::")
+    print("app_tx Kapp ID: '"+kapps_admin.config["application_id"] + "'")
+    #print("root: " + request.path.lstrip("/"))
     #print(session)
     #print(request)
-    print(request.endpoint)
-    print(request.form)
+    #print(request.endpoint)
+    #print(request.form)
     if "token" in session:
-        # print("con token")
+        print("con token")
         if request.endpoint != "logout" and request.endpoint != "login":
             mysqlConn=DBConn()
             cursor = mysqlConn.cursor()
@@ -2619,7 +2638,6 @@ def before_request_func():
                     session.pop("id", None)
                     cursor.close()
                     return klogin.klogout(
-                        mysql,
                         msg="Acceso Denegado. Solo es posible una sesión por Usuario.",
                     )
                 elif (
@@ -2640,9 +2658,9 @@ def before_request_func():
             else:  # USUARIO NO EN LA BASE DE LOGS
                 # print("sin token 1")
                 cursor.close()
-                return klogin.klogout(msg="")
+                return klogin.klogout(msg="Sesión Inválida")
     else:
-        print("sin token 2")
+        print("sin token 2****")
         # print(request.method)
         # print(request.environ)
         # print("**"+str(request.routing_exception)+"**")
@@ -2650,7 +2668,9 @@ def before_request_func():
         # print(request.full_path)
         # print(request.host_url)
         # print(request.path)
-        if "formulario" not in request.form:
+        print(request.endpoint)
+        print(request.form)
+        if "username" not in request.form:
             if (
                 request.endpoint != "logout"
                 and request.endpoint != "login"
@@ -2668,8 +2688,23 @@ def before_request_func():
                 return render_template("login.html", msg="")
             elif request.endpoint == "imagenes":
                 return "No access"
+            elif request.endpoint == "static":
+                None
             else:
-                klogin.klogin(aplication_id)
+                print("sin token 2b")
+                kapps_admin.config["application_id"]="-"
+                url_code = request.path.lstrip("/").upper()
+                kapp_id = klogin.checkDomain(url_code)
+                kapp_id = kapp_id if kapp_id else "-"
+                #if kapp_id:
+                #    app_tx.config["application_id"]=str(kapp_id)  
+                #    print ("111kapp_id: " + str(kapp_id) + " / app_tx: "+ app_tx.config["application_id"] +" KappCOde: " +kapp_code )
+                #print ("kapp_id: " + str(kapp_id) + " / app_tx: " + app_tx.config["application_id"]+" KappCOde: " +kapp_code)
+                return klogin.klogin(kapps_admin.config["application_id"], url_code=url_code  , kapp_id=kapp_id)
+                #return render_template("login.html", msg="", kapp_id=kapp_id, url_code=url_code)
+        else:
+            print('Going to validate Login!')
+                
 
 
 @kapps_admin.route("/crud_usuario", methods=["POST"])

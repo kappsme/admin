@@ -1,6 +1,28 @@
 {% block content %}
-<script type=text/javascript src="{{ url_for('static', filename='chosen.jquery.min.js') }}"></script>
-<script type=text/javascript src="{{ url_for('static', filename='crud_kapp.js') }}"></script>
+<!-- <script type=text/javascript src="{{ url_for('static', filename='chosen.jquery.min.js') }}"></script> -->
+
+
+<!-- AVISO DE MOROSIDAD -->
+{% if kapps_morosas >0: %}
+<div style="position: relative; top: 0; right: 0;">
+	<div id="toastPago" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+		<div class="toast-header">
+			<img font-color="white" src="{{ url_for('static', filename='icons_svg/alerta.svg') }}" alt="Inicio"
+				width="30" height="30" title="Inicio">
+			<strong class="mr-auto text-danger">&MediumSpace;
+				Cuentas Morosas
+			</strong>
+		</div>
+		<div class="toast-body text-danger" style="font-size:0.85rem;">
+			{% for kapp in kapps_info if kapp['DIAS ATRASO']>=0 and kapp['ESTADO']!='INACTIVE': %}
+			{{kapp['NOMBRE']}} [{{kapp['ID KAPP']}}] (Último Pago:
+			{{kapp['ULTIMOPAGO_YEAR']}}-{{kapp['ULTIMOPAGO_MES']}})<br>
+			{% endfor %}
+		</div>
+	</div>
+</div>
+
+{% endif %}
 <div class="form-group">
 
 	<div class="card text-white my-2 mx-2 px-0 border">
@@ -27,8 +49,9 @@
 							<p class="p-0 m-0">{{ rmov['ID KAPP'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-md" type="input" id="kapp-{{rmov['ID KAPP']}}-nombre"
-								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['NOMBRE']}}">
+							<input class="form-control form-control-md" type="input"
+								id="kapp-{{rmov['ID KAPP']}}-nombre" style="font-size:0.75rem;height:1.7rem;" disabled
+								value="{{rmov['NOMBRE']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
@@ -40,28 +63,29 @@
 									<option value="BLOCKED">Suspendida</option>
 								</select>
 								<script>
-									$('#kapp-{{rmov["ID KAPP"]}}-estado').val("{{rmov['ESTADO']}}");
-									$("#kapp-{{rmov['ID KAPP']}}-estado").chosen();
+									document.getElementById('kapp-{{rmov["ID KAPP"]}}-estado').val = "{{rmov['ESTADO']}}"
+									//$("#kapp-{{rmov['ID KAPP']}}-estado").chosen();
 								</script>
 							</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['ID KAPP']}}-fecha-cobro"
-								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['FECHA COBRO']}}">
+							<input class="form-control form-control-sm" type="date"
+								id="kapp-{{rmov['ID KAPP']}}-fecha-cobro" style="font-size:0.75rem;height:1.7rem;"
+								disabled value="{{rmov['FECHA COBRO']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
 								{{ rmov['DIAS ATRASO'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-licencias"
-								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
-								value="{{rmov['LICENCIAS']}}">
+							<input class="form-control form-control-sm" type="input"
+								id="kapp-{{rmov['ID KAPP']}}-licencias" style="font-size:0.75rem;height:1.7rem;"
+								placeholder="..." disabled value="{{rmov['LICENCIAS']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-vencimiento"
-								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
-								value="{{rmov['DIAS VENCIMIENTO']}}">
+							<input class="form-control form-control-sm" type="input"
+								id="kapp-{{rmov['ID KAPP']}}-vencimiento" style="font-size:0.75rem;height:1.7rem;"
+								placeholder="..." disabled value="{{rmov['DIAS VENCIMIENTO']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
@@ -97,9 +121,10 @@
 
 							<!-- REGISTRAR PAGO -->
 							<div class="col py-1">
-								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago" type="submit"
+								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago" type="button"
 									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
-									data-kapp-id="{{rmov['ID KAPP']}}">
+									data-kapp-id="{{rmov['ID KAPP']}}" data-bs-toggle="modal"
+									data-bs-target="#PagosModal">
 									<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}"
 										alt="Registrar Pago" class="img inline p-0 m-0"
 										style="width:1.7rem;height:1.3rem;" title="btn-kapp-registrar-pago">
@@ -121,8 +146,9 @@
 							<p class="p-0 m-0">{{ rmov['ID KAPP'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-nombre"
-								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['NOMBRE']}}">
+							<input class="form-control form-control-sm" type="input"
+								id="kapp-{{rmov['ID KAPP']}}-nombre" style="font-size:0.75rem;height:1.7rem;" disabled
+								value="{{rmov['NOMBRE']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
@@ -134,29 +160,30 @@
 									<option value="BLOCKED">Suspendida</option>
 								</select>
 								<script>
-									$('#kapp-{{rmov["ID KAPP"]}}-estado').val("{{rmov['ESTADO']}}");
-									$("#kapp-{{rmov['ID KAPP']}}-estado").chosen();
+									document.getElementById('kapp-{{rmov["ID KAPP"]}}-estado').val = "{{rmov['ESTADO']}}"
+									//$("#kapp-{{rmov['ID KAPP']}}-estado").chosen();
 								</script>
 							</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['ID KAPP']}}-fecha-cobro"
-								style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['FECHA COBRO']}}">
+							<input class="form-control form-control-sm" type="date"
+								id="kapp-{{rmov['ID KAPP']}}-fecha-cobro" style="font-size:0.75rem;height:1.7rem;"
+								disabled value="{{rmov['FECHA COBRO']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
 								{{ rmov['DIAS ATRASO'] }}</p>
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-licencias"
-								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
-								value="{{rmov['LICENCIAS']}}">
+							<input class="form-control form-control-sm" type="input"
+								id="kapp-{{rmov['ID KAPP']}}-licencias" style="font-size:0.75rem;height:1.7rem;"
+								placeholder="..." disabled value="{{rmov['LICENCIAS']}}">
 						</td>
 
 						<td class="p-1 m-0" style="border-color: white;">
-							<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-vencimiento"
-								style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
-								value="{{rmov['DIAS VENCIMIENTO']}}">
+							<input class="form-control form-control-sm" type="input"
+								id="kapp-{{rmov['ID KAPP']}}-vencimiento" style="font-size:0.75rem;height:1.7rem;"
+								placeholder="..." disabled value="{{rmov['DIAS VENCIMIENTO']}}">
 						</td>
 						<td class="p-1 m-0" style="border-color: white;">
 							<p class="p-0 m-0">
@@ -167,7 +194,7 @@
 							<p class="p-0 m-0">
 								{{ rmov['CONF'] }}</p>
 						</td>
-						
+
 						<td class="p-0 m-0" style="border: none;">
 							<!--EDITAR KAPP    -->
 							<div id="kapp-{{rmov['ID KAPP']}}-div-editar" class="col py-1">
@@ -190,7 +217,7 @@
 
 							<!-- REGISTRAR PAGO -->
 							<div class="col py-1">
-								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago" type="submit"
+								<button id="btn-kapp-registrar-pago" name="btn-kapp-registrar-pago" type="button"
 									class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
 									data-kapp-id="{{rmov['ID KAPP']}}">
 									<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}"
@@ -220,7 +247,7 @@
 					</div>
 					<div class="modal-body">
 
-						<label id="modal-crud-kapp-body" class="text-primary my-0" style="font-size:1.2rem"></label>
+						<p id="modal-crud-kapp-body" class="text-primary my-0" style="font-size:1.2rem"></p>
 						<!-- <input id="modal-crud-kapp-id" name="modal-crud-kapp-id" type="hidden"> -->
 						<input id="modal-crud-kapp-accion" name="modal-crud-kapp-accion" type="hidden">
 						<input id="modal-crud-kapp-datos" name="modal-crud-kapp-datos" type="hidden" value="0">
@@ -235,7 +262,7 @@
 
 
 		<!-- MODAL PARA REGISTRAR PAGO-->
-		<div class="modal fade" id="modal-kapp-pago" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+		<div class="modal fade" id="PagosModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
 			aria-hidden="true">
 			<div class="modal-dialog" role="document">
 				<div class="modal-content">
@@ -250,15 +277,15 @@
 						<p class="text-primary" style="font-size:0.85rem">Detalle de Pago</p>
 						<div class="form-row my-0 py-0">
 							<div class="form-group col-5 my-0 py-0">
-								<label class="text-primary my-0 py-0" style="font-size:1rem" for="nombres"><b>Fecha
+								<label class="text-primary my-0 py-0" style="font-size:1rem" for="modal-kapp-pago-fecha"><b>Fecha
 										Pago</b></label>
 							</div>
 							<div class="form-group col-4 my-0 py-0">
-								<label class="text-primary my-0 py-0" style="font-size:1rem" for="apellidos">Periodo a
+								<label class="text-primary my-0 py-0" style="font-size:1rem" for="modal-kapp-pago-periodo">Periodo a
 									Pagar</label>
 							</div>
 							<div class="form-group col-3 my-0 py-0">
-								<label class="text-primary my-0 py-0" style="font-size:1rem" for="apellidos">Monto
+								<label class="text-primary my-0 py-0" style="font-size:1rem" for="modal-kapp-pago-monto">Monto
 									Factura</label>
 							</div>
 						</div>
@@ -290,7 +317,8 @@
 							<div class="row ">
 
 
-								<table class="table table-bordered col-12" id="modal-kapp-pagos-tabla" name="modal-kapp-pagos-tabla">
+								<table class="table table-bordered col-12" id="modal-kapp-pagos-tabla"
+									name="modal-kapp-pagos-tabla">
 									<thead class="bg-primary">
 										<tr style="text-align: center;color: rgb(255, 255, 255);">
 											<th scope="col" class="p-1 mx-1">
@@ -340,7 +368,8 @@
 					</div>
 					<div class="modal-body">
 
-						<label id="modal-crud-kapp-body" class="text-primary my-0" style="font-size:1.2rem">¿Está seguro que desea eliminar este pago?</label>
+						<p id="modal-crud-kapp-body" class="text-primary my-0" style="font-size:1.2rem">¿Está seguro
+							que desea eliminar este pago?</p>
 						<!-- <input id="modal-crud-kapp-id" name="modal-crud-kapp-id" type="hidden"> -->
 						<input id="modal-crud-pago-kapp-id" name="modal-crud-pago-id" type="hidden">
 					</div>
@@ -355,5 +384,9 @@
 
 	</div>
 </div>
+<script type=text/javascript src="{{ url_for('static', filename='crud_kapp.js') }}"></script>
+<script>
+	// document.getElementById('toastPago').show()
+</script>
 
 {% endblock %}

@@ -1,32 +1,8 @@
 {% extends 'base_layout.html' %}
 
 {% block content %}
-<!-- AVISO DE MOROSIDAD -->
-{% if kapps_morosas >0: %}
-    <div style="position: relative; top: 0; right: 0;">
-        <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
-            <div class="toast-header">
-                <img font-color="white" src="{{ url_for('static', filename='icons_svg/alerta.svg') }}" alt="Inicio"
-                    width="30" height="30" title="Inicio">
-                <strong class="mr-auto text-danger">&MediumSpace; 
-                Cuentas Morosas
-                </strong>
-            </div>
-            <div class="toast-body text-danger" style="font-size:0.85rem;">
-                {% for kapp in kapps_info if kapp['DIAS ATRASO']>=0 and kapp['ESTADO']!='INACTIVE': %}
-                {{kapp['NOMBRE']}} [{{kapp['ID KAPP']}}] (Último Pago: {{kapp['ULTIMOPAGO_YEAR']}}-{{kapp['ULTIMOPAGO_MES']}})<br>
-                {% endfor %}   
-            </div>
-        </div>
-    </div>
-    <script>
-        $(document).ready(function () {
-            $('.toast').toast('show');
-        });
-    </script>
-{% endif %}
+
 <div>
-{% include 'kapps.html' %}
+    {% include 'kapps.html' %}
 </div>
 {% endblock %}
-

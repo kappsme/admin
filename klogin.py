@@ -10,17 +10,30 @@ from dotenv import load_dotenv
 
 # ENV Variables
 load_dotenv()
-load_dotenv('../.env-admin')
+#load_dotenv('../.env-admin')
 
 # CADENA PARA ENCRYPTACION EN MYSQL
 cadena_password = os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN')
-cadena_password_admin = os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN_ADMIN')
+#cadena_password_admin = os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN_ADMIN')
 
-def klogout(msg):
-    # Quita Token de Seguridad
-    print("QUITANDO TOKEN ....")
+def checkDomain(code):
     mysql=DBConn()
-    cursor = mysql.cursor()
+    cursor = mysql.cursor(dictionary=True)
+    cursor.execute(
+            "SELECT id from kapps_db.kapps where clave=%s and state = 'ACTIVE'", [code]
+        )
+    result=cursor.fetchone()
+    cursor.close()
+    mysql.close()
+    kapp_id = result["id"] if result is not None else "-"
+    return kapp_id   
+    
+
+def klogout(msg,appId="",kapp_code="", url_code="", kapp_id=""):
+    # Quita Token de Seguridad
+    # print("QUITANDO TOKEN ....")
+    mysql=DBConn()
+    cursor = mysql.cursor(dictionary=True)
     if "id" in session:
         cursor.execute(
             "delete from kapps_db.accounts_log where id_account=%s", [session["id"]]
@@ -38,104 +51,133 @@ def klogout(msg):
     cursor.close()
     mysql.close()
     # Redirect to login page
-    return render_template("login.html", msg=msg)
+    return render_template("login.html", msg=msg, kapp_code=kapp_code, kapp_id=kapp_id, url_code=url_code)
 
 
-def klogin(aplication_id):
-    if (
-        request.method == "POST"
-        and "username" in request.form
-        and "password" in request.form
-    ):
-        # Create variables for easy access
-        username = request.form["username"]
-        password = request.form["password"]
-        mysql=DBConn()
-        cursor = mysql.cursor(dictionary=True)
-        cursor.execute("SET session time_zone = '-6:00'")
-        cursor.execute(
-            "SELECT id, nivel, estado, bloqueo FROM kapps_db.accounts WHERE username = %s and estado=1 \
-                AND ((kapp_id= %s and aes_decrypt(password2,UNHEX(SHA2(%s,512))) = %s) OR (kapp_id=0 and aes_decrypt(password2,UNHEX(SHA2(%s,512))) = %s))",
-            (username, aplication_id, cadena_password, password,cadena_password_admin, password ),
-        )
-        account = cursor.fetchone()
-        # If account exists in accounts table in out database
-        if account:
-            
-            # Verifica si tiene Bloqueo
-            if int(account['bloqueo']) == 1:
-                return klogout(
-                    msg="<b>Usuario Bloqueado</b<br>Por favor, comuníquese con su Administrador",
-                )
-            # Verifica LOGGED IN
-            cursor.execute(
-                "select timestampdiff(second,ultimo_request,sysdate()) duracion_session, ac.vigencia, token \
-            from kapps_db.accounts_log log left join kapps_db.accounts ac on ac.id=log.id_account \
-            where id_account=%s",
-                [account['id']],
-            )
-            resultado=cursor.fetchone()
-            if (
-                resultado is None
-                or resultado["duracion_session"] > resultado["vigencia"]
-            ):
-                # CREA TOKEN
-                print(resultado)
-                token = datetime.now().strftime("%d%H%M%S%f") + str(randint(0, 999))
-                # Create session data, we can access this data in other routes
-                session["token"] = token
-                # session['token_new'] = True
-                session["id"] = account['id']
-                session["nivel"] = account['nivel']
-                session["impresiones"] = 1
+def klogin(aplication_id, kapp_id="", url_code=""):
+    print(">>> KLogin.klogin 1, aplication_id: "+str(aplication_id) + " / urlCode: "+url_code + " / kapp_id: "+str(kapp_id))
+    ## ADMIN
+    kapp_code=0
+    kapp_id = 0
+    aplication_id=0
+    if aplication_id=="-" and not kapp_id:
+        msg="Dominio No Encontrado"
+        print("KLogin.klogin 2:" + msg)
+        return klogout(msg)
+    elif aplication_id=="-" and kapp_id:
+        msg=""
+        print("KLogin.klogin 3")
+        return klogout(msg, url_code=url_code, kapp_id=kapp_id)
+    else:
+        if (
+            request.method == "POST"
+            and "username" in request.form
+            and "password" in request.form
+            # and "domain" in request.form
+        ):
+            # Create variables for easy access
+            username = request.form["username"]
+            password = request.form["password"]
+            #domain = request.form["domain"]
+
+            # print(">>> KLogin 1-2")
+            mysql=DBConn()
+            cursor = mysql.cursor(dictionary=True)
+            #print (domain, username, cadena_password, password)
+            cursor.execute("SET session time_zone = '-6:00'")
+            sql="""SELECT a.id, nivel, estado, bloqueo 
+                    FROM kapps_db.accounts a
+                    WHERE username = '{}' and estado=1
+                            AND aes_decrypt(password2,UNHEX(SHA2('{}',512))) = '{}'
+                """.format( username, cadena_password, password)
+            #print("SQL KLOGIN: "+sql)
+            cursor.execute(sql)
+            account = cursor.fetchone()
+
+
+            # If account exists in accounts table in out database
+            if account:
+                # Verifica si tiene Bloqueo
+                if int(account['bloqueo']) == 1:
+                    return klogout(
+                        msg="<b>Usuario Bloqueado</b<br>Por favor, comuníquese con su Administrador",
+                    )
+                # Verifica LOGGED IN
                 cursor.execute(
-                    "delete from kapps_db.accounts_log where id_account=%s",
-                    [session["id"]],
+                    "select timestampdiff(second,ultimo_request,sysdate()) duracion_session, ac.vigencia, token \
+                from kapps_db.accounts_log log left join kapps_db.accounts ac on ac.id=log.id_account \
+                where id_account=%s",
+                    [account['id']],
                 )
-                cursor.execute(
-                    "insert into kapps_db.accounts_log (token,id_account,ultimo_request) values (%s,%s,sysdate())",
-                    (session["token"], session["id"]),
-                )
-                mysql.commit()
-                cursor.close()
-                # Redirect to home page
-                return redirect(url_for("home"))
-            else:
-                if "token" in session:
-                    if resultado["token"] == session["token"]:
-                        cursor.close()
-                        return redirect(url_for("home"))
+                resultado=cursor.fetchone()
+                resultado = dict(zip(cursor.column_names, resultado)) if cursor.rowcount >= 0 else None
+                # print(cursor.statement)
+                # print(cursor.rowcount)
+                
+
+                if (
+                    resultado is None
+                    or resultado["duracion_session"] > resultado["vigencia"]
+                ):
+                    # CREA TOKEN
+                    #print(resultado)
+                    token = datetime.now().strftime("%d%H%M%S%f") + str(randint(0, 999))
+                    # Create session data, we can access this data in other routes
+                    session["token"] = token
+                    # session['token_new'] = True
+                    session["id"] = account['id']
+                    session["nivel"] = account['nivel']
+                    session["impresiones"] = 1
+                    cursor.execute(
+                        "delete from kapps_db.accounts_log where id_account=%s",
+                        [session["id"]],
+                    )
+                    cursor.execute(
+                        "insert into kapps_db.accounts_log (token,id_account,ultimo_request) values (%s,%s,sysdate())",
+                        (session["token"], session["id"]),
+                    )
+                    mysql.commit()
+                    cursor.close()
+                    # Redirect to home page
+                    print ("go HOME")
+                    return redirect(url_for("home"))
+                else:
+                    print("USER GETTING IN")
+                    if "token" in session:
+                        if resultado["token"] == session["token"]:
+                            cursor.close()
+                            return redirect(url_for("home"))
+                        else:
+                            cursor.close()
+                            session.pop("id", None)
+                            return klogout(
+                                msg="<b>Acceso Denegado 1</b><br>Solo es posible una sesión por Usuario.",
+                            )
                     else:
                         cursor.close()
-                        session.pop("id", None)
                         return klogout(
-                            msg="<b>Acceso Denegado</b<br>Solo es posible una sesión por Usuario.",
+                            msg="<b>Acceso Denegado 2</b><br>Solo es posible una sesión por Usuario.",
                         )
-                else:
-                    cursor.close()
-                    return klogout(
-                        msg="<b>Acceso Denegado</b<br>Solo es posible una sesión por Usuario.",
-                    )
+            else:
+                # Account doesnt exist or username/password incorrect
+                msg = "Usuario o Contraseña incorrecto!"
+                cursor.close()
+                return klogout(msg, aplication_id)
         else:
-            # Account doesnt exist or username/password incorrect
-            msg = "Usuario o Contraseña incorrecto!"
-            cursor.close()
-            return klogout(msg)
-    else:
-        print(">>> KLogin 2")
-        return klogout(msg="")
-        # return render_template('login.html')
+            print(">>> KLogin 2")
+            return klogout(msg="",kapp_code=kapp_code)
+            # return render_template('login.html')
 
 
-def kcrud_usuario(accion, parametro, parametro2, aplication_id, parametro3=0):
-    mysql=DBConn()
-    cursor = mysql.cursor(dictionary=True)
+def kcrud_usuario(mysql, accion, parametro, parametro2, aplication_id, parametro3=0):
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute("SET session time_zone = '-6:00'")
     if accion == 0:  # ANULA SESIONES
+        print("KENNY")
         cursor.execute(
             "delete from kapps_db.accounts_log where id_account=%s", [int(parametro)]
         )
-        mysql.commit()
+        mysql.connection.commit()
         cursor.close()
         return "OK"
     if accion == 1:  # CONSULTA DE USUARIO Y REGRESA SUGERENCIA DE CORREO
@@ -192,7 +234,7 @@ def kcrud_usuario(accion, parametro, parametro2, aplication_id, parametro3=0):
                 parametro,
             ),
         )
-        mysql.commit()
+        mysql.connection.commit()
         cursor.close()
         return "OK"
     elif accion == 4:  # CAMBIO DE CONTRASENA (verifica Codigo y Boton)
@@ -359,16 +401,3 @@ def kcrud_usuario(accion, parametro, parametro2, aplication_id, parametro3=0):
         return {"estado": "OK", "nuevo_usuario": new_username}
     else:
         return "x"
-
-def kapp_usuarios_disponibles(application_id):
-    # CONSULTA SI HAY LICENCIAS DISPONIBLES
-    mysql=DBConn()
-    cursor = mysql.cursor(dictionary=True)
-    cursor.execute(
-        "select licencias-(select count(1) usuarios_activos \
-            from kapps_db.accounts where kapp_id=k.id and id<>3 and estado=1) disponibles \
-                from kapps_db.kapps k where id=%s",
-        [application_id],
-    )
-    datos = cursor.fetchone()
-    return datos["disponibles"]
