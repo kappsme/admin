@@ -101,7 +101,7 @@ def home():
         cursor.execute('SET lc_time_names = "es_ES"')
         # VERIFICA PAGO DE USO DE KAPP!
         cursor.execute(
-            """select k.id "ID KAPP", k.name "NOMBRE", state "ESTADO", date(k.fecha_cobro) "FECHA COBRO"
+            """select k.id "ID KAPP", k.clave "CLAVE", k.name "NOMBRE", state "ESTADO", date(k.fecha_cobro) "FECHA COBRO"
                 , ifnull(datediff(now(),DATE_ADD(date_format(concat(ifnull(max(periodo), CAST(date_format(fecha_cobro,"%Y%m") AS CHAR CHARACTER SET utf8))
                         ,CAST(date_format(fecha_cobro,"%d") AS CHAR CHARACTER SET utf8)),"%Y%m%d"),INTERVAL 1 MONTH)),0) "DIAS ATRASO" 
                 , licencias "LICENCIAS" 
@@ -110,9 +110,9 @@ def home():
                 , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
                 , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
                 , configuracion CONF
-            from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id 
+            from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id and kp.estado=1
             left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1 
-        group by k.id, k.name, k.fecha_cobro, state, licencias, dias_vencimiento, configuracion""",
+        group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento, configuracion""",
         )
         kapps_info, columnas = cursor.fetchall(), cursor.column_names
         kapps_morosas = len(['x' for kapp in kapps_info if kapp['DIAS ATRASO']>=0])
@@ -167,19 +167,19 @@ def crud_kapp():
         cursor.execute(
             "update kapps_db.kapps set name=%s, state=%s, licencias=%s, fecha_cobro=%s, dias_vencimiento=%s where id=%s",
             (
-                pl["nombre"],
-                pl["estado"],
-                pl["licencias"],
-                pl["fecha_cobro"],
-                pl["vencimiento"],
-                pl["kapp_id"],
+                request.json["nombre"],
+                request.json["estado"],
+                request.json["licencias"],
+                request.json["fecha_cobro"],
+                request.json["vencimiento"],
+                request.json["kapp_id"],
             ),
         )
         result, reason = 'success', None
     elif accion == "1":  # DATOS ULTIMO PAGO
         cursor.execute(
             """select date_format(date_add(date_format(concat(max(periodo),'01'),'%Y%m%d'),INTERVAL 1 MONTH),'%Y%m') periodo_sugerido
-                from kapps_db.pagos where kapp_id=%s;""",
+                from kapps_db.pagos where kapp_id=%s and estado=1;""",
             (
                request.json["kapp_id"],
             ),
@@ -190,7 +190,7 @@ def crud_kapp():
         cursor.execute(
             """ insert into kapps_db.pagos (kapp_id, monto, periodo, fecha_registro, estado, userid) values (%s,%s,%s,%s,1,%s) """,
             (
-                request.json["kapp_id"], pl["monto"] , pl["periodo"], pl["fecha"],session["id"],
+                request.json["kapp_id"], request.json["monto"] , request.json["periodo"], request.json["fecha"],session["id"],
             ),
         )
         result, reason, data = 'success', None, None
@@ -207,6 +207,17 @@ def crud_kapp():
         )
         response_pagos = cursor.fetchall()
         result, reason, data = 'success', None, {'pagos':response_pagos}
+    elif accion == "4":  # ANULAR PAGOS
+        cursor.execute(
+            """update kapps_db.pagos set estado=0, fecha_elimina=sysdate(), userid_elimina=%s
+            where id=%s""",
+            (
+                session["id"],
+                request.json["pagoId"]
+            ),
+        )
+        print(">>>> " + request.json["pagoId"])
+        result, reason, data = 'success', None, None
     
     mysqlConn.commit()
     cursor.close()
