@@ -109,10 +109,12 @@ def home():
                 , count(distinct ka.username) "CUENTAS ACTIVAS" 
                 , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
                 , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
-                , configuracion CONF
+                , GROUP_CONCAT(DISTINCT KMC.name) AS CONF
             from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id and kp.estado=1
-            left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1 
-        group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento, configuracion""",
+            left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1
+            LEFT JOIN kapps_db.kapps_modules KM ON KM.kapp_id = k.id
+            LEFT JOIN kapps_db.kapps_modules_cat KMC ON KMC.id = KM.module_id
+        group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento""",
         )
         kapps_info, columnas = cursor.fetchall(), cursor.column_names
         kapps_morosas = len(['x' for kapp in kapps_info if kapp['DIAS ATRASO']>=0])
@@ -139,9 +141,9 @@ def home():
         session["username"] = account["username"]
 
 
-        for reg in kapps_info:
-            reg['CONF'] = [[cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)] for x in reg['CONF'].split(",")]
-                #= [cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)]
+        #for reg in kapps_info:
+        #    reg['CONF'] = [[cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)] for x in reg['CONF'].split(",")]
+        #        #= [cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)]
              
 
         return render_template(
@@ -218,7 +220,20 @@ def crud_kapp():
         )
         print(">>>> " + request.json["pagoId"])
         result, reason, data = 'success', None, None
-    
+    elif accion == "5":  # Configuracion LOAD
+        print(">>>> CONFIGURACION " + request.json["kapp_id"])
+        cursor.execute(
+            """SELECT kmc.id id_modulo, name, isnull(kapp_id) estado FROM kapps_db.kapps_modules_cat kmc 
+            left join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
+            where type='MAIN' and active=1
+            order by kmc.id asc""",
+            (
+                request.json["kapp_id"],
+            ),
+        )
+        response_configuracion = cursor.fetchall()
+        result, reason, data = 'success', None, {'configuracion':response_configuracion}
+        
     mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}

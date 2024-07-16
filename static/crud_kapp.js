@@ -37,7 +37,7 @@ function tablaDePagos(kappIDX) {
                                 var cellText = "<button id='btn-kapp-anular-pago' type='button' class='btnAnularPagos p-0 m-0' data-pago-id='" + pago[column] + "' data-bs-toggle='modal' data-bs-target='#modal-crud-pago'>-</button>"
                                 cell.innerHTML = cellText
                             }
-                            else if (column!='id') {
+                            else if (column != 'id') {
                                 var cellText = document.createTextNode(pago[column]);
                                 cell.appendChild(cellText);
                             }
@@ -214,3 +214,50 @@ document.getElementById('modal-crud-pago-confirmacion').onclick = function () {
             });
     })
 };
+
+
+// BOTON CONFIGURACION KAPP
+var modalCrudKappConfiguracion = new bootstrap.Modal(document.getElementById('modal-crud-conf'));
+var btnsGuardarKapp = document.getElementsByClassName('btnEditarKappConfiguracion');
+for (let btn of btnsGuardarKapp) {
+    btn.onclick = function () {
+        kappId = this.getAttributeNode('data-kapp-id').value;
+        var pl = JSON.stringify({ accion: '5', kapp_id: kappId });
+        let myPromise = new Promise((resolve, reject) => {
+            fetch($SCRIPT_ROOT + '/crud_kapp', {
+                method: "POST",
+                body: pl,
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            }).then(response => response.json())
+                .then(json => {
+                    const tblBody = document.getElementById("modal-kapp-conf-tabla-body");
+                    tblBody.innerHTML = '';
+                    json.data.configuracion.forEach((conf) => {
+                        const row = document.createElement("tr");
+                        for (const column of ['name', 'estado']) {
+                            const cell = document.createElement("td");
+                            if (column == 'estado') {
+                                if (conf[column]==0){
+                                    var cellText = "<input type='checkbox' id='catconf"+conf["id_modulo"]+"' name='catconf"+conf["id_modulo"]+"' checked />"
+                                }
+                                else {
+                                    var cellText = "<input type='checkbox' id='catconf"+conf["id_modulo"]+"' name='catconf"+conf["id_modulo"]+"' />"
+
+                                }
+                                cell.innerHTML = cellText
+                            } else {
+                                var cellText = document.createTextNode(conf[column]);
+                                cell.appendChild(cellText);
+                            }
+                            row.appendChild(cell);
+                        }
+                        tblBody.appendChild(row);
+                    })
+                });
+        })
+        modalCrudKappConfiguracion.show()
+    };
+}
+

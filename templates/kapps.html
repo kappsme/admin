@@ -62,7 +62,7 @@
 						<option value="BLOCKED">Suspendida</option>
 					</select>
 					<script>
-						document.getElementById('kapp-{{rmov["ID KAPP"]}}-estado').selectedIndex = {% if rmov['ESTADO']=='INACTIVE' %}2{% elif rmov['ESTADO']=='ACTIVE' %}1{% elif rmov['ESTADO']=='BLOCKED' %}3{% endif %}
+						document.getElementById('kapp-{{rmov["ID KAPP"]}}-estado').selectedIndex = {% if rmov['ESTADO'] == 'INACTIVE' %}2{% elif rmov['ESTADO'] == 'ACTIVE' %} 1{% elif rmov['ESTADO'] == 'BLOCKED' %} 3{% endif %}
 					</script>
 				</p>
 			</td>
@@ -98,16 +98,18 @@
 
 				<!--EDITAR KAPP    -->
 				<div id="kapp-{{rmov['ID KAPP']}}-div-editar" class="col py-1">
-					<button id="btn-editar-kapp" name="btn-editar-kapp" type="submit" class="btnEditarKapp btn btn-primary p-0 m-0"
-						style="width:1.8rem;height:1.8rem;" data-kapp-id="{{rmov['ID KAPP']}}">
+					<button id="btn-editar-kapp" name="btn-editar-kapp" type="submit"
+						class="btnEditarKapp btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+						data-kapp-id="{{rmov['ID KAPP']}}">
 						<img src="{{ url_for('static', filename='icons_svg/edit1.svg') }}" alt="Editar"
 							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar">
 					</button>
 				</div>
 				<!--GUARDAR KAPP -->
 				<div id="kapp-{{rmov['ID KAPP']}}-div-guardar" class="col py-1" hidden>
-					<button id="btn-guardar-kapp" name="btn-guardar-kapp" type="submit" class="btnGuardarKapp btn btn-warning p-0 m-0"
-						style="width:1.8rem;height:1.8rem;" data-kapp-id="{{rmov['ID KAPP']}}">
+					<button id="btn-guardar-kapp" name="btn-guardar-kapp" type="submit"
+						class="btnGuardarKapp btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
+						data-kapp-id="{{rmov['ID KAPP']}}">
 						<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}" alt="Guardar"
 							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Guardar">
 					</button>
@@ -121,6 +123,15 @@
 						<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}" alt="Registrar Pago"
 							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;"
 							title="btn-kapp-registrar-pago">
+					</button>
+				</div>
+				<!--EDITAR CONFIGURACION -->
+				<div id="kapp-{{rmov['ID KAPP']}}-div-editar-configuracion" class="col py-1">
+					<button id="btn-editar-kapp-configuracion" name="btn-editar-kapp-configuracion" type="submit"
+						class="btnEditarKappConfiguracion btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+						data-kapp-id="{{rmov['ID KAPP']}}">
+						<img src="{{ url_for('static', filename='icons_svg/conf.svg') }}" alt="Editar"
+							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar">
 					</button>
 				</div>
 			</td>
@@ -165,7 +176,7 @@
 			<div class="modal-header">
 				<h5 class="modal-title text-primary" style="font-size:1.3rem" id="modal-kapp-pago-titulo">
 					Registrar Pago</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
 				<p class="text-primary" style="font-size:0.85rem">Detalle de Pago</p>
@@ -271,6 +282,46 @@
 		</div>
 	</div>
 </div>
+
+<!-- MODAL PARA CONFIRMACION DE ELIMINACION DE PAGO-->
+<div class="modal fade" id="modal-crud-conf" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+	aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title text-primary" style="font-size:1.3rem">
+					Configuracion
+				</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+
+				<table class="table table-bordered col-12" id="modal-kapp-conf-tabla" name="modal-kapp-conf-tabla">
+					<thead class="bg-primary">
+						<tr style="text-align: center;color: rgb(255, 255, 255);">
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Modulo
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Estado
+							</th>
+						</tr>
+					</thead>
+					<tbody id="modal-kapp-conf-tabla-body" name="modal-kapp-conf-tabla-body">
+					</tbody>
+				</table>
+
+				<input id="modal-crud-pago-pago-id" name="modal-crud-pago-id" type="hidden">
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+				<button id="modal-crud-pago-confirmacion" class="btn btn-primary">Guardar</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
 
 
 <script type=text/javascript src="{{ url_for('static', filename='crud_kapp.js') }}"></script>
