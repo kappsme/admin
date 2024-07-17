@@ -222,6 +222,8 @@ var btnsGuardarKapp = document.getElementsByClassName('btnEditarKappConfiguracio
 for (let btn of btnsGuardarKapp) {
     btn.onclick = function () {
         kappId = this.getAttributeNode('data-kapp-id').value;
+        document.getElementById('modal-crud-conf-confirmacion').getAttributeNode('data-kapp-id').value = kappId;
+
         var pl = JSON.stringify({ accion: '5', kapp_id: kappId });
         let myPromise = new Promise((resolve, reject) => {
             fetch($SCRIPT_ROOT + '/crud_kapp', {
@@ -239,11 +241,11 @@ for (let btn of btnsGuardarKapp) {
                         for (const column of ['name', 'estado']) {
                             const cell = document.createElement("td");
                             if (column == 'estado') {
-                                if (conf[column]==0){
-                                    var cellText = "<input type='checkbox' id='catconf"+conf["id_modulo"]+"' name='catconf"+conf["id_modulo"]+"' checked />"
+                                if (conf[column] == 0) {
+                                    var cellText = "<input type='checkbox' class='modulocat' modulecatid=" + conf["id_modulo"] + " checked />"
                                 }
                                 else {
-                                    var cellText = "<input type='checkbox' id='catconf"+conf["id_modulo"]+"' name='catconf"+conf["id_modulo"]+"' />"
+                                    var cellText = "<input type='checkbox' class='modulocat' modulecatid=" + conf["id_modulo"] + " />"
 
                                 }
                                 cell.innerHTML = cellText
@@ -261,3 +263,26 @@ for (let btn of btnsGuardarKapp) {
     };
 }
 
+// BOTON GUARDAR CONFIGURACION KAPP
+document.getElementById('modal-crud-conf-confirmacion').onclick = function () {
+    var configuracionKapp = document.getElementsByClassName('modulocat');
+    var newconf={}
+    for (let conf of configuracionKapp) {
+        newconf[conf.getAttributeNode('modulecatid').value]=conf.checked
+    }
+    kappId = this.getAttributeNode('data-kapp-id').value;
+
+    var pl = JSON.stringify({ accion: '6', kappId: kappId, conf: JSON.stringify(newconf) });
+    let myPromise = new Promise((resolve, reject) => {
+        fetch($SCRIPT_ROOT + '/crud_kapp', {
+            method: "POST",
+            body: pl,
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        }).then(response => response.json())
+            .then(json => {
+                location.reload();
+            });
+    })
+};

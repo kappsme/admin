@@ -109,7 +109,7 @@ def home():
                 , count(distinct ka.username) "CUENTAS ACTIVAS" 
                 , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
                 , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
-                , GROUP_CONCAT(DISTINCT KMC.name) AS CONF
+                , IFNULL(GROUP_CONCAT(DISTINCT KMC.name),'') AS CONF
             from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id and kp.estado=1
             left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1
             LEFT JOIN kapps_db.kapps_modules KM ON KM.kapp_id = k.id
@@ -221,7 +221,6 @@ def crud_kapp():
         print(">>>> " + request.json["pagoId"])
         result, reason, data = 'success', None, None
     elif accion == "5":  # Configuracion LOAD
-        print(">>>> CONFIGURACION " + request.json["kapp_id"])
         cursor.execute(
             """SELECT kmc.id id_modulo, name, isnull(kapp_id) estado FROM kapps_db.kapps_modules_cat kmc 
             left join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
@@ -233,7 +232,16 @@ def crud_kapp():
         )
         response_configuracion = cursor.fetchall()
         result, reason, data = 'success', None, {'configuracion':response_configuracion}
-        
+    elif accion == "6":  # Configuracion POST
+        confJson = json.loads(request.json["conf"])
+        for confcat in confJson:
+            cursor.execute("delete from kapps_db.kapps_modules where kapp_id=%s and module_id=%s",
+            (request.json["kappId"], confcat))
+            if confJson[confcat]:
+                cursor.execute("insert into kapps_db.kapps_modules (kapp_id, module_id) values (%s,%s)",
+                (request.json["kappId"], confcat))
+                
+               
     mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}
@@ -2616,15 +2624,15 @@ def logout():
 # CADA VEZ QUE SE LLAME A ALGUNA DEF
 @kapps_admin.before_request
 def before_request_func():
-    print(":::::-BEFORE REQUEST FUNC-:::::")
-    print("app_tx Kapp ID: '"+kapps_admin.config["application_id"] + "'")
+    #print(":::::-BEFORE REQUEST FUNC-:::::")
+    #print("app_tx Kapp ID: '"+kapps_admin.config["application_id"] + "'")
     #print("root: " + request.path.lstrip("/"))
     #print(session)
     #print(request)
     #print(request.endpoint)
     #print(request.form)
     if "token" in session:
-        print("con token")
+        #print("con token")
         if request.endpoint != "logout" and request.endpoint != "login":
             mysqlConn=DBConn()
             cursor = mysqlConn.cursor()
@@ -2686,7 +2694,7 @@ def before_request_func():
                 cursor.close()
                 return klogin.klogout(msg="Sesión Inválida")
     else:
-        print("sin token 2****")
+        #print("sin token 2****")
         # print(request.method)
         # print(request.environ)
         # print("**"+str(request.routing_exception)+"**")
@@ -2694,8 +2702,8 @@ def before_request_func():
         # print(request.full_path)
         # print(request.host_url)
         # print(request.path)
-        print(request.endpoint)
-        print(request.form)
+        #print(request.endpoint)
+        #print(request.form)
         if "username" not in request.form:
             if (
                 request.endpoint != "logout"
