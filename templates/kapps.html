@@ -24,13 +24,19 @@
 
 {% endif %}
 
-<table class="table table-light table-striped table-bordered table-hover border-primary table-responsive ">
+<div style="position: relative; top: 0; right: 0;">
+	Filtro
+</div>
+
+
+
+<table class="table table-light table-striped table-bordered table-hover border-primary table-responsive-sm">
 	<thead class="bg-primary align-middle">
 		<tr style="text-align: center;color: rgb(255, 255, 255);">
 			{% for col in columnas if col not in ['ULTIMOPAGO_MES','ULTIMOPAGO_YEAR']: %}
-			<th scope="col" class="p-1 mx-1">
+			<td class="p-1 mx-1 {% if col in ['LICENCIAS','DIAS VENCIMIENTO','CUENTAS ACTIVAS','FECHA COBRO']: %} d-none d-md-table-cell {% endif %}">
 				<p class="p-0 m-0">{{ col }}</p>
-			</th>
+			</td>
 			{% endfor %}
 		</tr>
 	</thead>
@@ -66,7 +72,7 @@
 					</script>
 				</p>
 			</td>
-			<td class="p-1 m-0">
+			<td class="p-1 m-0 d-none d-md-table-cell">
 				<input class="form-control form-control-sm" type="date" id="kapp-{{rmov['ID KAPP']}}-fecha-cobro"
 					style="font-size:0.75rem;height:1.7rem;" disabled value="{{rmov['FECHA COBRO']}}">
 			</td>
@@ -74,16 +80,16 @@
 				<p class="p-0 m-0">
 					{{ rmov['DIAS ATRASO'] }}</p>
 			</td>
-			<td class="p-1 m-0">
+			<td class="p-1 m-0 d-none d-md-table-cell">
 				<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-licencias"
 					style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled value="{{rmov['LICENCIAS']}}">
 			</td>
-			<td class="p-1 m-0">
+			<td class="p-1 m-0 d-none d-md-table-cell">
 				<input class="form-control form-control-sm" type="input" id="kapp-{{rmov['ID KAPP']}}-vencimiento"
 					style="font-size:0.75rem;height:1.7rem;" placeholder="..." disabled
 					value="{{rmov['DIAS VENCIMIENTO']}}">
 			</td>
-			<td class="p-1 m-0">
+			<td class="p-1 m-0 d-none d-md-table-cell">
 				<p class="p-0 m-0">
 					{{ rmov['CUENTAS ACTIVAS'] }}</p>
 			</td>

@@ -109,7 +109,7 @@ def home():
                 , count(distinct ka.username) "CUENTAS ACTIVAS" 
                 , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
                 , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
-                , IFNULL(GROUP_CONCAT(DISTINCT KMC.name),'') AS CONF
+                , IFNULL(GROUP_CONCAT(DISTINCT KMC.name SEPARATOR ' -\n') ,'') AS CONF
             from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id and kp.estado=1
             left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1
             LEFT JOIN kapps_db.kapps_modules KM ON KM.kapp_id = k.id
