@@ -73,6 +73,7 @@
 	aria-hidden="true">
 	<div class="modal-dialog" role="document">
 		<div class="modal-content">
+            <form>
 			<div class="modal-header">
 				<h5 class="modal-title text-primary" style="font-size:1.3rem" id="modal-kapp-pago-titulo">
 					Crear KAPP</h5>
@@ -80,51 +81,47 @@
 			</div>
 			<div class="modal-body">
 
-
-                <form>
                 
                     <div class="mb-3">
-                      <input type="text" id="clave" class="form-control" aria-describedby="claveHelpInline" placeholder="Clave" aria-label="Clace">
+                      <input type="text" id="clave" class="form-control" aria-describedby="claveHelpInline" placeholder="Clave" aria-label="Clave" required>
                       <div id="claveHelpInline" class="form-text">Debe ser 4 caracteres y contener, al menos, una letra.</div>
                     </div>
 
                     <div class="mb-3">                    
-                      <input type="text" id="nombre" class="form-control" aria-describedby="nombreHelpInline" placeholder="Nombre" aria-label="Nombre">
+                      <input type="text" id="nombre" class="form-control" aria-describedby="nombreHelpInline" placeholder="Nombre" aria-label="Nombre" required>
                       <div id="nombreHelpInline" class="form-text">Descripción Corta de la KAPP.</div>
                     </div>
                     
                     <div class="mb-3">
-                        <input type="date" id="fechaCobro" class="form-control" aria-describedby="fechaCobroHelpInline" placeholder="Fecha Cobro" aria-label="Fecha Cobro">
+                        <input type="date" id="fechaCobro" class="form-control" aria-describedby="fechaCobroHelpInline" placeholder="Fecha Cobro" aria-label="Fecha Cobro" required>
                       <div id="fechaCobroHelpInline" class="form-text">Fecha de Inicio de Cobro.</div>
                     </div>
 
                     <div class="mb-3">
-                        <input type="number" id="licencias" class="form-control" aria-describedby="licenciasHelpInline" placeholder="Licencias" aria-label="Licencias">
+                        <input type="number" id="licencias" class="form-control" aria-describedby="licenciasHelpInline" placeholder="Licencias" aria-label="Licencias" required>
                       <div id="licenciasHelpInline" class="form-text">Cantidad Máxima permita de licencias</div>
                     </div>
 
                     <div class="mb-3">
-                        <input type="number" id="diasVencimiento" class="form-control" aria-describedby="diasVencimientoHelpInline" placeholder="Días Vencimiento" aria-label="Días Vencimiento">
+                        <input type="number" id="diasVencimiento" class="form-control" aria-describedby="diasVencimientoHelpInline" placeholder="Días Vencimiento" aria-label="Días Vencimiento" required>
                       <div id="diasVencimientoHelpInline" class="form-text">Cantidad de días permitidos después de la fecha de pago</div>
                     </div>
 
                     <div class="mb-3">
-                        <input type="text" id="propietario" class="form-control" aria-describedby="propietario" placeholder="Propietario" aria-label="Propietario">
-                      <div id="propietarioHelpInline" class="form-text">Propietario de la KAPP</div>
+                        <input type="text" id="propietario" class="form-control" aria-describedby="propietario" placeholder="Propietario" aria-label="Propietario" required>
+                      <div id="propietarioHelpInline" class="form-text">Nombre del Propietario de la KAPP</div>
                     </div>
 
                     <div class="mb-3">
-                        <input type="email" id="email" class="form-control" aria-describedby="propietarioHelpInline" placeholder="email" aria-label="email">
+                        <input type="email" id="email" class="form-control" aria-describedby="propietarioHelpInline" placeholder="email" aria-label="email" required>
                       <div id="propietarioHelpInline" class="form-text">Email del propietario de la KAPP</div>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                
-                </form>
-                
-
+                    <div class="mb-3">
+                        <input type="number" id="mensualidad" class="form-control" aria-describedby="mensualidadHelpInline" placeholder="Monto Mensual" aria-label="Monto Mensual" required>
+                        <div id="mensualidadHelpInline" class="form-text">Monto Mensual</div>
+                    </div>
 			</div>
-
 
 			<div class="modal-footer">
 				<div class="container">
@@ -133,10 +130,13 @@
 							<button id="modal-kapp-pago-cerrar" name="modal-kapp-pago-cerrar" type="button"
 								class="btn btn-secondary" data-bs-dismiss="modal"
 								style="display: inline-block;">Cerrar</button>
-						</div>
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </div>
 					</div>
 				</div>
 			</div>
+            
+        </form>
 
 		</div>
 	</div>

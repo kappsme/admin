@@ -240,6 +240,14 @@ def crud_kapp():
             if confJson[confcat]:
                 cursor.execute("insert into kapps_db.kapps_modules (kapp_id, module_id) values (%s,%s)",
                 (request.json["kappId"], confcat))
+    elif accion == "7":  # REGISTRAR PAGO
+        cursor.execute(
+            """ insert into kapps_db.pagos (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) """,
+            (
+                request.json["kapp_id"], request.json["monto"] , request.json["periodo"], request.json["fecha"],session["id"],
+            ),
+        )
+        result, reason, data = 'success', None, None
                 
                
     mysqlConn.commit()
