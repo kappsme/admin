@@ -266,9 +266,9 @@ for (let btn of btnsGuardarKapp) {
 // BOTON GUARDAR CONFIGURACION KAPP
 document.getElementById('modal-crud-conf-confirmacion').onclick = function () {
     var configuracionKapp = document.getElementsByClassName('modulocat');
-    var newconf={}
+    var newconf = {}
     for (let conf of configuracionKapp) {
-        newconf[conf.getAttributeNode('modulecatid').value]=conf.checked
+        newconf[conf.getAttributeNode('modulecatid').value] = conf.checked
     }
     kappId = this.getAttributeNode('data-kapp-id').value;
 
@@ -285,4 +285,45 @@ document.getElementById('modal-crud-conf-confirmacion').onclick = function () {
                 location.reload();
             });
     })
+};
+
+// BOTON CREAR KAPP
+document.getElementById('btn-modal-crear-kapp').onclick = function () {
+    var configuracionKapp = document.getElementsByClassName('crear-kapp');
+    var newconf = {}
+    var form_completed = true
+    const footerflag = document.getElementById("modal-kapp-crud-footer-flag");
+    footerflag.innerHTML = '';
+
+    
+    for (let conf of configuracionKapp) {
+        newconf[conf.id] = conf.value
+        if (conf.value == '') {
+            form_completed = false
+        }
+    }
+    if (!form_completed) {
+        footerflag.innerHTML = 'Información de KAPP incompleta';
+    }
+    else {
+
+        var pl = JSON.stringify({ accion: '7', conf: JSON.stringify(newconf) });
+        let myPromise = new Promise((resolve, reject) => {
+            fetch($SCRIPT_ROOT + '/crud_kapp', {
+                method: "POST",
+                body: pl,
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            }).then(response => response.json())
+                .then(json => {
+                    if (json.result == "success") {
+                        location.reload();
+                    }
+                    else {
+                        footerflag.innerHTML = json.reason;
+                    }
+                });
+        })
+    }
 };

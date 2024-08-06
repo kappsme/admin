@@ -163,6 +163,8 @@ def crud_kapp():
     mysqlConn = DBConn()
     cursor = mysqlConn.cursor(dictionary=True)
     cursor.execute('SET lc_time_names = "es_ES"')
+    cursor.execute("SET session time_zone = '-6:00'")
+    
     accion = request.json["accion"]
 
     if accion  == "0":  # ACTUALIZA KAPP
@@ -240,16 +242,30 @@ def crud_kapp():
             if confJson[confcat]:
                 cursor.execute("insert into kapps_db.kapps_modules (kapp_id, module_id) values (%s,%s)",
                 (request.json["kappId"], confcat))
-    elif accion == "7":  # REGISTRAR PAGO
-        cursor.execute(
-            """ insert into kapps_db.pagos (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) """,
-            (
-                request.json["kapp_id"], request.json["monto"] , request.json["periodo"], request.json["fecha"],session["id"],
-            ),
-        )
-        result, reason, data = 'success', None, None
-                
-               
+    elif accion == "7":  # Agregar KAPP
+        confJson = json.loads(request.json["conf"])
+        
+        if len(confJson["clave"])!=4 or not confJson["clave"].isalnum():
+            result, reason, data = 'error', 'Formato de clave inválido', None 
+        else:
+            cursor.execute(
+            "select clave from kapps_db.kapps where clave= '{}'".format(confJson["clave"])
+            )
+            clave = cursor.fetchone()
+            
+            if clave:
+                result, reason, data = 'error', 'Código de Clave ya existe', {'clave' : clave}
+            else:
+                cursor.execute(
+                """ insert into kapps_db.kapps (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values 
+                (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s) """,
+                (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
+                )
+                #print("last ID: " + str(cursor.lastrowid))
+                result, reason, data = 'success', None, None
+
+
+      
     mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}
