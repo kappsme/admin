@@ -262,6 +262,12 @@ def crud_kapp():
                 (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
                 )
                 #print("last ID: " + str(cursor.lastrowid))
+                # CREA USUARIO AMIND
+                datos_nuevo_usuario = {
+                    "correo": "kenny_carcamo@hotmail.com",
+                    "nivel": 1,
+                }
+                klogin.kcrud_usuario(7,'kenny','rodriguez',str(cursor.lastrowid),datos_nuevo_usuario)
                 result, reason, data = 'success', None, None
 
 

@@ -169,8 +169,10 @@ def klogin(aplication_id, kapp_id="", url_code=""):
             # return render_template('login.html')
 
 
-def kcrud_usuario(mysql, accion, parametro, parametro2, aplication_id, parametro3=0):
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+def kcrud_usuario(accion, parametro, parametro2, aplication_id, parametro3=0):
+    mysql=DBConn()
+    cursor = mysql.cursor(dictionary=True)
+    # cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute("SET session time_zone = '-6:00'")
     if accion == 0:  # ANULA SESIONES
         print("KENNY")
@@ -329,6 +331,7 @@ def kcrud_usuario(mysql, accion, parametro, parametro2, aplication_id, parametro
                     return "OK"
     elif accion == 7:  # CREA USUARIO
         # CREA USERNAME
+        cadena_password = os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN')
         nombres = parametro.strip().lower()  # NOMBRES
         apellidos = parametro2.strip().lower()  # APELLIDOS
         apellido2 = ""
@@ -374,27 +377,14 @@ def kcrud_usuario(mysql, accion, parametro, parametro2, aplication_id, parametro
                     [chr(randint(48, 57)) for i in range(password_conf[char_type])]
                 )
         # GUARDA EL NUEVO USUARIO
-        cursor.execute(
-            "insert into kapps_db.accounts (username, email, name, lastname, kapp_id, nivel, estado, bloqueo, vigencia, password_reset, password2) \
-                values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,aes_encrypt(%s,UNHEX(SHA2(%s,512))))",
-            (
-                [
-                    new_username,
-                    parametro3["correo"],
-                    nombres,
-                    apellidos,
-                    aplication_id,
-                    parametro3["nivel"],
-                    1,
-                    0,
-                    1200,
-                    1,
-                    password,
-                    cadena_password,
-                ]
-            ),
-        )
-        mysql.connection.commit()
+        correo_nuevo_usuario = parametro3["correo"]
+        nivel_nuevo_usuario = parametro3["nivel"]
+        sql = f"""insert into kapps_db.accounts (username, email, name, lastname, kapp_id, nivel, estado, bloqueo, vigencia, password_reset, password2) 
+        values('{new_username}','{correo_nuevo_usuario}','{nombres}','{apellidos}','{aplication_id}','{nivel_nuevo_usuario}',1,0,1200,1,aes_encrypt('{password}',UNHEX(SHA2('{cadena_password}',512))))"""
+        print("SQL >>>>>>>>> " + sql)
+        cursor.execute(sql)
+        
+        mysql.commit()
         cursor.close()
         datos_mail = [nombres, password]
         main.envio_correo(8, parametro3["correo"], 0, datos_mail)
