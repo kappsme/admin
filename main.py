@@ -253,22 +253,24 @@ def crud_kapp():
             )
             clave = cursor.fetchone()
             
-            if clave:
+            if not clave:
                 result, reason, data = 'error', 'Código de Clave ya existe', {'clave' : clave}
             else:
-                cursor.execute(
-                """ insert into kapps_db.kapps (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values 
-                (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s) """,
-                (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
-                )
+                # cursor.execute(
+                # """ insert into kapps_db.kapps (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values 
+                # (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s) """,
+                # (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
+                # )
                 #print("last ID: " + str(cursor.lastrowid))
                 # CREA USUARIO AMIND
+                newKappId= 6 # str(cursor.lastrowid)
                 datos_nuevo_usuario = {
-                    "correo": "kenny_carcamo@hotmail.com",
+                    "correo": confJson["usuario_email"],
                     "nivel": 1,
                 }
-                klogin.kcrud_usuario(7,'kenny','rodriguez',str(cursor.lastrowid),datos_nuevo_usuario)
-                result, reason, data = 'success', None, None
+                klogin.kcrud_usuario(7,confJson["usuario_nombre"],confJson["usuario_apellido"],newKappId,datos_nuevo_usuario)
+                print("usuario creado")
+                result, reason, data = 'success2', None, None
 
 
       

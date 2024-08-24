@@ -318,7 +318,7 @@ document.getElementById('btn-modal-crear-kapp').onclick = function () {
             }).then(response => response.json())
                 .then(json => {
                     if (json.result == "success") {
-                        // location.reload();
+                        location.reload();
                     }
                     else {
                         footerflag.innerHTML = json.reason;

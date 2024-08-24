@@ -379,8 +379,7 @@ def kcrud_usuario(accion, parametro, parametro2, aplication_id, parametro3=0):
         # GUARDA EL NUEVO USUARIO
         correo_nuevo_usuario = parametro3["correo"]
         nivel_nuevo_usuario = parametro3["nivel"]
-        sql = f"""insert into kapps_db.accounts (username, email, name, lastname, kapp_id, nivel, estado, bloqueo, vigencia, password_reset, password2) 
-        values('{new_username}','{correo_nuevo_usuario}','{nombres}','{apellidos}','{aplication_id}','{nivel_nuevo_usuario}',1,0,1200,1,aes_encrypt('{password}',UNHEX(SHA2('{cadena_password}',512))))"""
+        sql = f"""insert into kapps_db.accounts (username, email, name, lastname, kapp_id, nivel, estado, bloqueo, vigencia, password_reset, password2) values('{new_username}','{correo_nuevo_usuario}','{nombres}','{apellidos}','{aplication_id}','{nivel_nuevo_usuario}',1,0,1200,1,aes_encrypt('{password}',UNHEX(SHA2('{cadena_password}',512))))"""
         print("SQL >>>>>>>>> " + sql)
         cursor.execute(sql)
         
