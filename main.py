@@ -224,7 +224,7 @@ def crud_kapp():
         result, reason, data = 'success', None, None
     elif accion == "5":  # Configuracion LOAD
         cursor.execute(
-            """SELECT kmc.id id_modulo, name, isnull(kapp_id) estado FROM kapps_db.kapps_modules_cat kmc 
+            """SELECT kmc.id id_modulo, name, isnull(kapp_id) estado, description FROM kapps_db.kapps_modules_cat kmc 
             left join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
             where type='MAIN' and active=1
             order by kmc.id asc""",
@@ -271,6 +271,7 @@ def crud_kapp():
                 klogin.kcrud_usuario(7,confJson["usuario_nombre"],confJson["usuario_apellido"],newKappId,datos_nuevo_usuario)
                 print("usuario creado")
                 result, reason, data = 'success2', None, None
+       
 
 
       

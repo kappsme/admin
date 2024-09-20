@@ -330,11 +330,11 @@ document.getElementById('btn-modal-crear-kapp').onclick = function () {
 
 // BOTON KAPP PARAMETROS
 var modalCrudKappParametros = new bootstrap.Modal(document.getElementById('modal-crud-parametros'));
-var btnsGuardarKapp = document.getElementsByClassName('btnEditarKappConfiguracion');
-for (let btn of btnsGuardarKapp) {
+var btnsGuardarKappParametros = document.getElementsByClassName('btnEditarKappParametros');
+for (let btn of btnsGuardarKappParametros) {
     btn.onclick = function () {
         kappId = this.getAttributeNode('data-kapp-id').value;
-        document.getElementById('modal-crud-conf-confirmacion').getAttributeNode('data-kapp-id').value = kappId;
+        document.getElementById('modal-crud-parametros-confirmacion').getAttributeNode('data-kapp-id').value = kappId;
 
         var pl = JSON.stringify({ accion: '5', kapp_id: kappId });
         let myPromise = new Promise((resolve, reject) => {
@@ -350,7 +350,7 @@ for (let btn of btnsGuardarKapp) {
                     tblBody.innerHTML = '';
                     json.data.configuracion.forEach((conf) => {
                         const row = document.createElement("tr");
-                        for (const column of ['name', 'estado']) {
+                        for (const column of ['name', 'estado','description']) {
                             const cell = document.createElement("td");
                             if (column == 'estado') {
                                 if (conf[column] == 0) {
@@ -371,6 +371,6 @@ for (let btn of btnsGuardarKapp) {
                     })
                 });
         })
-        modalCrudKappConfiguracion.show()
+        modalCrudKappParametros.show()
     };
 }
