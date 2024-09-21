@@ -89,19 +89,12 @@ mail = Mail(kapps_admin)
 def login():
     ## ADMIN
     return klogin.klogin(kapps_admin.config["application_id"])
-    
 
-
-
-@kapps_admin.route("/home/", methods=["GET", "POST"])
-def home():
-    if "token" in session:
-        mysqlConn = DBConn()
-        cursor = mysqlConn.cursor(dictionary=True)
-        cursor.execute('SET lc_time_names = "es_ES"')
-        # VERIFICA PAGO DE USO DE KAPP!
-        cursor.execute(
-            """select k.id "ID KAPP", k.clave "CLAVE", k.name "NOMBRE", state "ESTADO", date(k.fecha_cobro) "FECHA COBRO"
+def datos_kapp(id_kapp=None):
+    mysql=DBConn()
+    cursor = mysql.cursor(dictionary=True)
+    cursor.execute('SET lc_time_names = "es_ES"')
+    sql =  """select k.id "ID KAPP", k.clave "CLAVE", k.name "NOMBRE", state "ESTADO", date(k.fecha_cobro) "FECHA COBRO"
                 , ifnull(datediff(now(),DATE_ADD(date_format(concat(ifnull(max(periodo), CAST(date_format(fecha_cobro,"%Y%m") AS CHAR CHARACTER SET utf8))
                         ,CAST(date_format(fecha_cobro,"%d") AS CHAR CHARACTER SET utf8)),"%Y%m%d"),INTERVAL 1 MONTH)),0) "DIAS ATRASO" 
                 , licencias "LICENCIAS" 
@@ -113,10 +106,22 @@ def home():
             from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id and kp.estado=1
             left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1
             LEFT JOIN kapps_db.kapps_modules KM ON KM.kapp_id = k.id
-            LEFT JOIN kapps_db.kapps_modules_cat KMC ON KMC.id = KM.module_id
-        group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento""",
-        )
-        kapps_info, columnas = cursor.fetchall(), cursor.column_names
+            LEFT JOIN kapps_db.kapps_modules_cat KMC ON KMC.id = KM.module_id """
+    if id_kapp:
+       sql+="where k.id={} ".format(id_kapp) 
+    sql+=" group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento"
+    cursor.execute(sql)
+    kapps_info, columnas  = cursor.fetchall(), cursor.column_names
+    cursor.close()
+    return kapps_info, columnas
+
+@kapps_admin.route("/home/", methods=["GET", "POST"])
+def home():
+    if "token" in session:
+        mysqlConn = DBConn()
+        cursor = mysqlConn.cursor(dictionary=True)
+        cursor.execute('SET lc_time_names = "es_ES"')
+        kapps_info, columnas = datos_kapp() 
         kapps_morosas = len(['x' for kapp in kapps_info if kapp['DIAS ATRASO']>=0])
 
         cursor.execute(
@@ -131,21 +136,10 @@ def home():
             [session["id"]],
         )
         account = cursor.fetchone()
-        # DEFINE AMBIENTE SEGUN BASE DE DATOS
-        # if app_tx.config["MYSQL_DB"] == "tx_pruebas":
-        #     session["ambiente"] = "PRUEBAS"
-        # else:
         session["ambiente"] = "PRODUCCION"
-
         session["clave"] = 'ADMIN' # CODIGO DISTINGUE LA KAPP
         session["username"] = account["username"]
-
-
-        #for reg in kapps_info:
-        #    reg['CONF'] = [[cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)] for x in reg['CONF'].split(",")]
-        #        #= [cat['descripcion'] for cat in kapps_cat_info if cat['id']==int(x)]
-             
-
+        
         return render_template(
             "home.html"
             , kapps_info=kapps_info
@@ -154,6 +148,18 @@ def home():
         )
     else:
         return klogin.klogout(msg="Sesión Caducada!")
+
+@kapps_admin.route("/kappconf/<int:id_kapp>", methods=["GET", "POST"])
+def kappconf(id_kapp):
+    kapps_info, columnas = datos_kapp(id_kapp)
+    
+    return render_template(
+        "home.html"
+        , kapps_info=kapps_info
+        , columnas = columnas
+        , kapps_morosas = 0
+        , detalle = True
+    )
 
 
 

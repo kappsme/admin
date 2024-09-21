@@ -34,7 +34,8 @@
 	<thead class="bg-primary align-middle">
 		<tr style="text-align: center;color: rgb(255, 255, 255);">
 			{% for col in columnas if col not in ['ULTIMOPAGO_MES','ULTIMOPAGO_YEAR']: %}
-			<td class="p-1 mx-1 {% if col in ['LICENCIAS','DIAS VENCIMIENTO','CUENTAS ACTIVAS','FECHA COBRO']: %} d-none d-md-table-cell {% endif %}">
+			<td
+				class="p-1 mx-1 {% if col in ['LICENCIAS','DIAS VENCIMIENTO','CUENTAS ACTIVAS','FECHA COBRO']: %} d-none d-md-table-cell {% endif %}">
 				<p class="p-0 m-0">{{ col }}</p>
 			</td>
 			{% endfor %}
@@ -127,8 +128,7 @@
 						class="btnVerPagos btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
 						data-kapp-id="{{rmov['ID KAPP']}}" data-bs-toggle="modal" data-bs-target="#PagosModal">
 						<img src="{{ url_for('static', filename='icons_svg/billing.svg') }}" alt="Registrar Pago"
-							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;"
-							title="Registrar Pago">
+							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Registrar Pago">
 					</button>
 				</div>
 				<!--EDITAR CONFIGURACION -->
@@ -349,20 +349,42 @@
 			</div>
 			<div class="modal-body">
 
-				<table class="table table-bordered col-12" id="modal-kapp-conf-tabla-parametros" name="modal-kapp-conf-tabla-parametros">
-					<thead class="bg-primary">
-						<tr style="text-align: center;color: rgb(255, 255, 255);">
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">Modulo
-							</th>
-							<th scope="col" class="p-1 mx-1">
-								<p style="font-size:1rem" class="p-0 m-0">Estado
-							</th>
-						</tr>
-					</thead>
-					<tbody id="modal-kapp-conf-tabla-body-parametros" name="modal-kapp-conf-tabla-body-parametros">
-					</tbody>
-				</table>
+				<div class="accordion accordion-flush" id="modal-kapp-modules-accordionFlush">
+					<div class="accordion-item">
+						<h2 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+								data-bs-target="#flush-collapseOne" aria-expanded="false"
+								aria-controls="flush-collapseOne">
+								Accordion Item #1
+							</button>
+						</h2>
+						<div id="flush-collapseOne" class="accordion-collapse collapse"
+							data-bs-parent="#accordionFlushExample">
+							<div class="accordion-body">Placeholder content for this accordion, which is intended to
+								demonstrate the <code>.accordion-flush</code> class. This is the first item's accordion
+								body.</div>
+						</div>
+					</div>
+					<div class="accordion-item">
+						<h2 class="accordion-header">
+							<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+								data-bs-target="#flush-collapseThree" aria-expanded="false"
+								aria-controls="flush-collapseThree">
+								Accordion Item #3
+							</button>
+						</h2>
+						<div id="flush-collapseThree" class="accordion-collapse collapse"
+							data-bs-parent="#accordionFlushExample">
+							<div class="accordion-body">Placeholder content for this accordion, which is intended to
+								demonstrate the <code>.accordion-flush</code> class. This is the third item's accordion
+								body. Nothing more exciting happening here in terms of content, but just filling up the
+								space to make it look, at least at first glance, a bit more representative of how this
+								would look in a real-world application.</div>
+						</div>
+					</div>
+				</div>
+
+
 
 			</div>
 			<div class="modal-footer">

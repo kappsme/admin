@@ -295,7 +295,7 @@ document.getElementById('btn-modal-crear-kapp').onclick = function () {
     const footerflag = document.getElementById("modal-kapp-crud-footer-flag");
     footerflag.innerHTML = '';
 
-    
+
     for (let conf of configuracionKapp) {
         newconf[conf.id] = conf.value
         if (conf.value == '') {
@@ -335,7 +335,6 @@ for (let btn of btnsGuardarKappParametros) {
     btn.onclick = function () {
         kappId = this.getAttributeNode('data-kapp-id').value;
         document.getElementById('modal-crud-parametros-confirmacion').getAttributeNode('data-kapp-id').value = kappId;
-
         var pl = JSON.stringify({ accion: '5', kapp_id: kappId });
         let myPromise = new Promise((resolve, reject) => {
             fetch($SCRIPT_ROOT + '/crud_kapp', {
@@ -346,31 +345,21 @@ for (let btn of btnsGuardarKappParametros) {
                 }
             }).then(response => response.json())
                 .then(json => {
-                    const tblBody = document.getElementById("modal-kapp-conf-tabla-body");
-                    tblBody.innerHTML = '';
+                    const accBody = document.getElementById("modal-kapp-modules-accordionFlush");
+                    accBody.innerHTML = '';
                     json.data.configuracion.forEach((conf) => {
-                        const row = document.createElement("tr");
-                        for (const column of ['name', 'estado','description']) {
-                            const cell = document.createElement("td");
-                            if (column == 'estado') {
-                                if (conf[column] == 0) {
-                                    var cellText = "<input type='checkbox' class='modulocat' modulecatid=" + conf["id_modulo"] + " checked />"
-                                }
-                                else {
-                                    var cellText = "<input type='checkbox' class='modulocat' modulecatid=" + conf["id_modulo"] + " />"
-
-                                }
-                                cell.innerHTML = cellText
-                            } else {
-                                var cellText = document.createTextNode(conf[column]);
-                                cell.appendChild(cellText);
-                            }
-                            row.appendChild(cell);
+                        if (conf['estado'] == 0) {
+                            const accItem = document.createElement("div");
+                            accItem.className = "accordion-item"
+                            const headerItem = document.createElement("h2")
+                            headerItem.className = "accordion-header"
+                            headerItem.innerHTML='<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">'+conf['name']+'</button>'
+                            accItem.appendChild(headerItem)
+                            accBody.appendChild(accItem);
                         }
-                        tblBody.appendChild(row);
                     })
-                });
+                })
         })
         modalCrudKappParametros.show()
-    };
+    }
 }

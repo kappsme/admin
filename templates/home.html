@@ -5,4 +5,9 @@
 <div>
     {% include 'kapps.html' %}
 </div>
+
+{% if detalle: %}
+	{% include 'kapps_conf.html' %}
+{% endif %}
+
 {% endblock %}
