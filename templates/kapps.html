@@ -149,6 +149,17 @@
 							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar Parámetros">
 					</button>
 				</div>
+				<!-- HOME TALLER -->
+                                <form action="{{ url_for('kappconf')}}" method="POST" id="home" name="home">
+                                    <button type="submit" class="btn btn-primary p-1 m-2 px-0 mx-0"
+                                    style="height:3rem ;width:3rem">
+                                    <img font-color="white"
+                                    src="{{ url_for('static', filename='icons_svg/taller.svg') }}" alt="Inicio"
+                                    width="30" height="30" title="Inicio">
+                                    <input type="hidden" id="kapp_id" name="kapp_id" value={{rmov['ID KAPP']}} />
+                                </button>
+                </form>
+
 			</td>
 		</tr>
 		{% endfor %}

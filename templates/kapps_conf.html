@@ -2,44 +2,20 @@
 <!-- <script type=text/javascript src="{{ url_for('static', filename='chosen.jquery.min.js') }}"></script> -->
 
 
-<div class="accordion accordion-flush" id="modal-kapp-modules-accordionFlush">
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+	
+	{% for modulo in kapps_modules if modulo.estado==0: %}
+	<li class="nav-item" role="presentation">
+	  <button class="nav-link {% if modulo.numreg==0:%}active{% endif %}" id="modulo-{{modulo.id_modulo}}" data-bs-toggle="tab" data-bs-target="#tab-{{modulo.id_modulo}}" type="button" role="tab" aria-controls="tab-{{modulo.id_modulo}}" aria-selected="false">{{modulo.name}}</button>
+	</li>
+	{% endfor %}
+</ul>
 
-
-
-	<div class="accordion-item">
-		<h2 class="accordion-header">
-			<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-				data-bs-target="#flush-collapseOne" aria-expanded="false"
-				aria-controls="flush-collapseOne">
-				Accordion Item #1
-			</button>
-		</h2>
-		<div id="flush-collapseOne" class="accordion-collapse collapse"
-			data-bs-parent="#accordionFlushExample">
-			<div class="accordion-body">Placeholder content for this accordion, which is intended to
-				demonstrate the <code>.accordion-flush</code> class. This is the first item's accordion
-				body.</div>
-		</div>
-	</div>
-	<div class="accordion-item">
-		<h2 class="accordion-header">
-			<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-				data-bs-target="#flush-collapseThree" aria-expanded="false"
-				aria-controls="flush-collapseThree">
-				Accordion Item #3
-			</button>
-		</h2>
-		<div id="flush-collapseThree" class="accordion-collapse collapse"
-			data-bs-parent="#accordionFlushExample">
-			<div class="accordion-body">Placeholder content for this accordion, which is intended to
-				demonstrate the <code>.accordion-flush</code> class. This is the third item's accordion
-				body. Nothing more exciting happening here in terms of content, but just filling up the
-				space to make it look, at least at first glance, a bit more representative of how this
-				would look in a real-world application.</div>
-		</div>
-	</div>
-</div>
-
+  <div class="tab-content" id="myTabContent">
+	{% for modulo in kapps_modules if modulo.estado==0: %}
+	<div class="tab-pane fade {% if modulo.numreg==0:%}show active{% endif %}" id="tab-{{modulo.id_modulo}}" role="tabpanel" aria-labelledby="modulo-{{modulo.id_modulo}}" tabindex="0">{{modulo.description}}</div>
+	{% endfor %}
+  </div>
 
 
 {% endblock %}

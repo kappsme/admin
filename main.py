@@ -149,9 +149,28 @@ def home():
     else:
         return klogin.klogout(msg="Sesión Caducada!")
 
-@kapps_admin.route("/kappconf/<int:id_kapp>", methods=["GET", "POST"])
-def kappconf(id_kapp):
+@kapps_admin.route("/kappconf", methods=["GET", "POST"])
+def kappconf():
+    id_kapp = request.form.get("kapp_id")
     kapps_info, columnas = datos_kapp(id_kapp)
+    
+    mysqlConn = DBConn()
+    cursor = mysqlConn.cursor(dictionary=True)
+    cursor.execute('SET lc_time_names = "es_ES"')
+    cursor.execute("SET session time_zone = '-6:00'")
+    cursor.execute(
+            """SELECT ROUND(@rownum:=@rownum+1,0) numreg, kmc.id id_modulo, name, isnull(kapp_id) estado, description FROM kapps_db.kapps_modules_cat kmc 
+            left join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
+            , (SELECT @rownum:=-1) r
+            where type='MAIN' and active=1
+            order by kmc.id asc""",
+            (
+                id_kapp,
+            ),
+        )
+    kapps_modules = cursor.fetchall()
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    print(kapps_modules)
     
     return render_template(
         "home.html"
@@ -159,6 +178,7 @@ def kappconf(id_kapp):
         , columnas = columnas
         , kapps_morosas = 0
         , detalle = True
+        , kapps_modules = kapps_modules
     )
 
 
@@ -170,7 +190,7 @@ def crud_kapp():
     cursor = mysqlConn.cursor(dictionary=True)
     cursor.execute('SET lc_time_names = "es_ES"')
     cursor.execute("SET session time_zone = '-6:00'")
-    
+      
     accion = request.json["accion"]
 
     if accion  == "0":  # ACTUALIZA KAPP
@@ -277,10 +297,7 @@ def crud_kapp():
                 klogin.kcrud_usuario(7,confJson["usuario_nombre"],confJson["usuario_apellido"],newKappId,datos_nuevo_usuario)
                 print("usuario creado")
                 result, reason, data = 'success2', None, None
-       
 
-
-      
     mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}
