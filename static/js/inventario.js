@@ -476,30 +476,30 @@ $(document).ready(function () {
             }, function (data) {
                 $('#lblDisponibilidadNueva').html('<b>' + data['unidades_nuevas'] + '</b>');
                 $('#valorUnidadesNuevas').val(data['unidades_nuevas']);
-                if (gl_tipo_precio==1) precioNuevo=data['precio_nuevo'];
+                if (gl_tipo_precio == 1) precioNuevo = data['precio_nuevo'];
                 // if (gl_tipo_precio==2) precioNuevo=data['precio_nuevo_taller'];
-                if (gl_tipo_precio==2) precioNuevo=data['precio_nuevo'];
+                if (gl_tipo_precio == 2) precioNuevo = data['precio_nuevo'];
                 $('#lblPrecioNuevo').html("₡ " + toThousandComma(precioNuevo));
                 $("#alertaNuevos").text("");
                 $("#ubicacionNuevos").text(data['ubicacion_nuevos']);
                 $("#ubicacionNuevos").css("visibility", "");
-                if (data['precio_nuevo_taller']==0 && data['unidades_nuevas']>0) {
+                if (data['precio_nuevo_taller'] == 0 && data['unidades_nuevas'] > 0) {
                     $("#alertaNuevos").html("Debe agregar el <b>Precio a Taller</b> en el lote más reciente de este producto.");
                     document.getElementById('botonNuevo').disabled = true;
                     $("#alertaNuevos").css("visibility", "");
                 }
                 $('#compraNuevos').val(1);
-                
+
                 $('#lblDisponibilidadUsada').html('<b>' + data['unidades_usadas'] + '</b>');
                 $('#valorUnidadesUsadas').val(data['unidades_usadas']);
-                if (gl_tipo_precio==1) precioUsado=data['precio_usado'];
-                if (gl_tipo_precio==2) precioUsado=data['precio_usado'];
+                if (gl_tipo_precio == 1) precioUsado = data['precio_usado'];
+                if (gl_tipo_precio == 2) precioUsado = data['precio_usado'];
                 $('#lblPrecioUsado').html("₡ " + toThousandComma(precioUsado));
                 $('#compraUsados').val(1);
                 $("#alertaUsados").text("");
                 $("#ubicacionUsados").text(data['ubicacion_usados']);
                 $("#ubicacionUsados").css("visibility", "");
-                if (data['precio_usado_taller']==0 && data['unidades_usadas']>0) {
+                if (data['precio_usado_taller'] == 0 && data['unidades_usadas'] > 0) {
                     $("#alertaUsados").html("Debe agregar el <b>Precio a Taller</b> en el lote más reciente de este producto.");
                     document.getElementById('botonUsado').disabled = true;
                     $("#alertaUsados").css("visibility", "");
@@ -907,30 +907,42 @@ $(document).ready(function () {
                 repuesto_boleta = 1;
                 id_boleta = $('#id-boleta-interna').val();
             }
-            $.post($SCRIPT_ROOT + '/tnd', {
-                "tienda-accion": 5, // Ingreso al carrito / o Boleta
+
+            var pl = JSON.stringify({
+                "tienda_accion": 5, // Ingreso al carrito / o Boleta
                 "codigo_producto": $('#codigo').val(),
                 "unidades": $('#compraNuevos').val(),
                 "estado": 1, // Estado Producto (1=NUEVO,2=USADO)
                 "repuesto_boleta": repuesto_boleta, // Adiciona repuesto a boleta
                 "id_boleta": id_boleta //Codigo de boleta (cuando aplica)
-            }, function (datos) {
-                if ($('#botonNuevoIimg').length) {
-                    $('#espacio_carrito').html(datos);
-                } else {
-                    if (datos == "OK") {
-                        $('#modal-repuesto-inventario').modal('hide');
-                        $('#id-boleta-i').val($('#id-boleta-interna').val());
-                        $('#tipo-display-i').val(5); // VISUALIZAR 
-                        document.getElementById("form-buscar-boleta-i").submit();
+            })
+
+            let myPromise = new Promise((resolve, reject) => {
+                fetch($SCRIPT_ROOT + '/tnd', {
+                    method: "POST",
+                    body: pl,
+                    headers: {
+                        "Content-type": "application/json; charset=UTF-8"
                     }
-                    if (datos.resultado == 'NOT-ENOUGH') {
-                        $('#modal-notificacion-titulo').html("Notificación de disponibilidad en el Inventario para el producto seleccionado");
-                        $('#modal-notificacion-mensaje').html("<b>No es posible agregar este producto a la boleta</b><br><br>No hay disponibilidad suficiente para su solicitud.<br>Por favor revíselo.");
-                        $('#modal-notificacion').modal('show');
-                    }
-                }
-            });
+                }).then(response => response.json())
+                    .then(json => {
+                        if ($('#botonNuevoIimg').length) {
+                            $('#espacio_carrito').html(json.datos);
+                        } else {
+                            if (json.datos == "OK") {
+                                $('#modal-repuesto-inventario').modal('hide');
+                                $('#id-boleta-i').val($('#id-boleta-interna').val());
+                                $('#tipo-display-i').val(5); // VISUALIZAR 
+                                document.getElementById("form-buscar-boleta-i").submit();
+                            }
+                            if (datos.resultado == 'NOT-ENOUGH') {
+                                $('#modal-notificacion-titulo').html("Notificación de disponibilidad en el Inventario para el producto seleccionado");
+                                $('#modal-notificacion-mensaje').html("<b>No es posible agregar este producto a la boleta</b><br><br>No hay disponibilidad suficiente para su solicitud.<br>Por favor revíselo.");
+                                $('#modal-notificacion').modal('show');
+                            }
+                        }
+                    })
+            })
         }
     });
 
