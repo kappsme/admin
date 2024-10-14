@@ -158,6 +158,7 @@ def kappconf():
     cursor = mysqlConn.cursor(dictionary=True)
     cursor.execute('SET lc_time_names = "es_ES"')
     cursor.execute("SET session time_zone = '-6:00'")
+    
     cursor.execute(
             """SELECT ROUND(@rownum:=@rownum+1,0) numreg, kmc.id id_modulo, name, isnull(kapp_id) estado, description FROM kapps_db.kapps_modules_cat kmc 
             left join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
@@ -169,8 +170,19 @@ def kappconf():
             ),
         )
     kapps_modules = cursor.fetchall()
-    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    print(kapps_modules)
+    
+    cursor.execute(""" SELECT txpc.module_id id_modulo, txpc.nombre, txpc.descripcion, txpc.html_type, txpc.html_additional, txpk.id id_conf, txpk.valor  
+                    FROM kapps_db.kapps_modules_cat kmc 
+                        inner join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
+                        left join kapps_db.tx_params_cat txpc on txpc.module_id= km.module_id
+                        left join kapps_db.tx_params_kapp txpk on txpk.tx_params_cat_id=txpc.id and txpk.kapp_id=%s
+                    where type='MAIN' and active=1 and txpc.estado
+                    order by txpc.id asc""",
+            (
+                id_kapp, id_kapp,
+            ),
+        )
+    kapps_parameters = cursor.fetchall()
     
     return render_template(
         "home.html"
@@ -179,8 +191,8 @@ def kappconf():
         , kapps_morosas = 0
         , detalle = True
         , kapps_modules = kapps_modules
-    )
-
+        , kapps_parameters = kapps_parameters
+        )
 
 
 @kapps_admin.route("/crud_kapp", methods=["POST","GET"])

@@ -13,7 +13,23 @@
 
   <div class="tab-content" id="myTabContent">
 	{% for modulo in kapps_modules if modulo.estado==0: %}
-	<div class="tab-pane fade {% if modulo.numreg==0:%}show active{% endif %}" id="tab-{{modulo.id_modulo}}" role="tabpanel" aria-labelledby="modulo-{{modulo.id_modulo}}" tabindex="0">{{modulo.description}}</div>
+	<div class="tab-pane fade {% if modulo.numreg==0:%}show active{% endif %}" id="tab-{{modulo.id_modulo}}" role="tabpanel" aria-labelledby="modulo-{{modulo.id_modulo}}" tabindex="0">{{modulo.description}}
+	
+	{% for parametro in kapps_parameters if parametro.id_modulo==modulo.id_modulo: %}
+	
+		<div class="row mb-3">
+			<label for="colFormLabelSm" class="col-sm-2 col-form-label col-form-label-sm">{{ parametro.nombre }}</label>
+			<div class="col-sm-10">
+				{% if parametro.html_type == 'textarea': %}
+				<textarea {{ parametro.html_additional }}>{{ parametro.valor}}</textarea>
+				{% else: %}
+				<input type="{{parametro.html_type}}" class="form-control form-control-sm" id="colFormLabelSm" placeholder="" value="{{ parametro.valor}}">
+				{% endif %}
+			</div>
+		</div>
+	{% endfor %}
+
+</div>
 	{% endfor %}
   </div>
 
