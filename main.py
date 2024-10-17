@@ -171,7 +171,7 @@ def kappconf():
         )
     kapps_modules = cursor.fetchall()
     
-    cursor.execute(""" SELECT txpc.category, txpc.module_id id_modulo, txpc.nombre, txpc.descripcion, txpc.html_type, txpc.html_additional, txpk.id id_conf, txpk.valor  
+    cursor.execute("""SELECT txpc.id catalog_id, km.kapp_id, txpc.category, txpc.module_id id_modulo, txpc.nombre, txpc.descripcion, txpc.html_type, txpc.html_additional, txpk.valor  
                     FROM kapps_db.kapps_modules_cat kmc 
                         inner join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
                         left join kapps_db.tx_params_cat txpc on txpc.module_id= km.module_id
