@@ -1049,28 +1049,6 @@ $(document).ready(function () {
 
 
 
-    // BOTON PARA CONFIRMAR VENTA 
-    $(document).on('click', '#btn-modal-confirmacion-venta', function () {
-        $.post($SCRIPT_ROOT + '/tnd', {
-            "tienda-accion": 4, // GENERAR RECIBO
-            "id_cliente": $("#codigo-cliente").val(),
-        }, function (datos) {
-            if (datos.resultado == "OK") {
-                tienda_saldo_pagos(1);
-                $('#espacio_carrito').html(datos.carrito);
-                $('#collapseOpcionesRecibo').html(datos.botones);
-                $('#alerta-ok-venta').html("Venta Registrada!");
-                $('#modal-confirmacion-venta-cliente').modal('hide');
-                $("#collapsePago").collapse('hide');
-                $("#confirmar-venta-boton").collapse('hide');
-                document.getElementById('boton-pago-tienda').disabled = true;
-                $("#collapseOpcionesRecibo").collapse('show');
-            }
-        });
-    });
-
-
-
     // BOTON EDITAR PRODUCTO - ACTIVA CAMBIOS
     $(document).on('click', '#boton-activar-editar-producto', function () {
         if ($(this).text() == "Editar") {
