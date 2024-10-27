@@ -1083,16 +1083,6 @@ $(document).ready(function () {
 
     // BOTON PARA CONFIRMAR PAGO 
     $(document).on('click', '#boton-pago-tienda', function () {
-        tipo_pago = document.querySelector('input[name="tipo_pago"]:checked').value;
-        if (tipo_pago == 1) { tipo_pago = "Efectivo" }
-        if (tipo_pago == 2) { tipo_pago = "Tarjeta (Crédito/Débito)" }
-        if (tipo_pago == 3) { tipo_pago = "Transferecia" }
-        $("#modal-tienda-pago-confirmacion").html("¿Desea confirmar el pago con <b>" + tipo_pago + "</b> de <b>₡" + toThousandComma($("#monto-p").val()) + "</b>?");
-        $('#pagoTiendaModal').modal('show');
-    });
-
-    // BOTON REGISTRAR PAGO TIENDA
-    $(document).on('click', "#boton-confirmar-tienda-pago", function (e) {
         $.post($SCRIPT_ROOT + '/tnd', {
             "tienda-accion": 10, // PAGO
             monto: $('#monto-p').val(),
@@ -1101,7 +1091,26 @@ $(document).ready(function () {
             tienda_saldo_pagos(1);
             $('#pagoTiendaModal').modal('hide');
         });
+        
+        // tipo_pago = document.querySelector('input[name="tipo_pago"]:checked').value;
+        // if (tipo_pago == 1) { tipo_pago = "Efectivo" }
+        // if (tipo_pago == 2) { tipo_pago = "Tarjeta (Crédito/Débito)" }
+        // if (tipo_pago == 3) { tipo_pago = "Transferecia" }
+        // $("#modal-tienda-pago-confirmacion").html("¿Desea confirmar el pago con <b>" + tipo_pago + "</b> de <b>₡" + toThousandComma($("#monto-p").val()) + "</b>?");
+        // $('#pagoTiendaModal').modal('show');
     });
+
+    // // BOTON REGISTRAR PAGO TIENDA
+    // $(document).on('click', "#boton-confirmar-tienda-pago", function (e) {
+    //     $.post($SCRIPT_ROOT + '/tnd', {
+    //         "tienda-accion": 10, // PAGO
+    //         monto: $('#monto-p').val(),
+    //         medio: document.querySelector('input[name="tipo_pago"]:checked').value // MEDIO
+    //     }, function () {
+    //         tienda_saldo_pagos(1);
+    //         $('#pagoTiendaModal').modal('hide');
+    //     });
+    // });
 
     // BOTON ACTIVA MODAL ANULAR PAGO 
     $(document).on('click', '#id-pago-venta', function () {
