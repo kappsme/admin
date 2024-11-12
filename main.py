@@ -54,7 +54,7 @@ def DBConn():
         password= os.getenv('MYSQL_PASSWORD'),
         host= os.getenv('MYSQL_HOST'),
         database= os.getenv('MYSQL_DB'),
-        raise_on_warnings = True
+        raise_on_warnings = False
     )
     return Conn
 
@@ -1565,7 +1565,7 @@ def pdfs_mail():
         pdf.write_html(html_source)
         archivo = (
             kapps_admin.root_path
-            + "\\templates\pdf_repository\\recibo_"
+            + "\\templates\\pdf_repository\\recibo_"
             + str(id_movimiento)
             + ".pdf"
         )
@@ -1577,7 +1577,7 @@ def pdfs_mail():
         pdf = boleta_pdf(id_boleta)
         archivo = (
             kapps_admin.root_path
-            + "\\templates\pdf_repository\\boleta_"
+            + "\\templates\\pdf_repository\\boleta_"
             + str(id_boleta)
             + ".pdf"
         )
@@ -1590,12 +1590,11 @@ def pdfs_mail():
         pdf = cotizacion[0]
         archivo = (
             kapps_admin.root_path
-            + "\\templates\pdf_repository\\cotizacion_"
+            + "\\templates\\pdf_repository\\cotizacion_"
             + str(cotizacion[1])
             + ".pdf"
         )
         pdf.output(archivo, "F")
-        print("ANTES DE ENVIAR EL CORREO")
         envio_correo(3, destinatario, archivo, str(cotizacion[1]))
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
@@ -1625,7 +1624,6 @@ def pdfs_mail():
             + " and estado=1"
         )
         cursor.execute(sql)
-        print(monto + " Enviada a " + destinatario)
         cursor.execute(
             "insert into boletas_comentarios (id_boleta, comentario, id_usuario, tipo) values (%s,%s,%s,3)",
             [id_boleta, monto + " Enviada a " + destinatario, session["id"]],
@@ -1638,7 +1636,7 @@ def pdfs_mail():
         pdf = comprobante[0]
         archivo = (
             kapps_admin.root_path
-            + "\\templates\pdf_repository\\comprobante_"
+            + "\\templates\\pdf_repository\\comprobante_"
             + str(comprobante[1])
             + ".pdf"
         )
@@ -1651,7 +1649,7 @@ def pdfs_mail():
         pdf = comprobante
         archivo = (
             kapps_admin.root_path
-            + "\\templates\pdf_repository\\comprobante_venta_"
+            + "\\templates\\pdf_repository\\comprobante_venta_"
             + str(id_venta)
             + ".pdf"
         )

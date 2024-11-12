@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.14.0a1
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ COPY requirements.txt .
 COPY .env .
 
 
-RUN python -m pip install pip==22.3.1
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 RUN rm -f requirements.txt
 
