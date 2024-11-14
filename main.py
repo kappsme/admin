@@ -186,6 +186,49 @@ def kappconf():
     kapps_parameters_cats = []
     [kapps_parameters_cats.append({"id_modulo":parametro['id_modulo'],"category":parametro['category']}) for parametro in kapps_parameters if {"id_modulo":parametro['id_modulo'],"category":parametro['category']} not in kapps_parameters_cats]
     
+    cursor.execute("""
+                select * from 
+                   (SELECT ctz.id id, ctz_base.field_name system_field_name
+                        , case when id_ctz_base is not null then ctz.field_name else ctz.field_name end field_NAME
+                        , screen_name
+                        , case when id_ctz_base is not null then ctz_ft2.tag else ctz_ft.tag end tag
+                        , case when id_ctz_base is not null then ctz_ft2.html_type else ctz_ft.html_type end html_type
+                        , name module_name
+                        -- , ctz_module_screens.id_module_cat
+                        -- ,  ctz.*, ctz_base.*  , ctz_module_screens.*, ctz_ft.*
+                        from tx.ctz left join tx.ctz_base 
+                                        on id_kapp=%s and ctz.id_ctz_base=ctz_base.id and ctz.id_module_screen=ctz_base.id_module_screen
+                                    left join tx.ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
+                                    left join tx.ctz_ft on ctz.id_field_type = ctz_ft.id 
+                                    left join tx.ctz_ft ctz_ft2 on ctz_base.id_field_type = ctz_ft2.id
+                                    left join kapps_db.kapps_modules km on km.kapp_id = id_kapp and km.module_id = ctz_module_screens.id_module_cat
+                                    left join kapps_db.kapps_modules_cat kmc on  km.module_id=kmc.id
+                    union all
+                    SELECT null id, ctz.field_name system_field_name
+                        , null field_name 
+                        , screen_name
+                        , ctz_ft.tag 
+                        , ctz_ft.html_type
+                        -- , ctz.id_module_cat
+                        , name module_name
+                        from tx.ctz_base ctz
+                                    left join tx.ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
+                                    left join tx.ctz_ft on ctz.id_field_type = ctz_ft.id
+                                    left join kapps_db.kapps_modules km on km.kapp_id=%s and km.module_id = ctz_module_screens.id_module_cat
+                                    left join kapps_db.kapps_modules_cat kmc on  km.module_id=kmc.id
+                        where ctz.id not in (select id_ctz_base from ctz where id_kapp=1 and id_ctz_base is not null)
+                        ) t
+                        order by screen_name, id asc, system_field_name asc
+                   """,
+            (
+                id_kapp, id_kapp,
+            ),
+        )
+    kapps_modules_fields = cursor.fetchall()
+    kapps_modules_screens = []
+    [kapps_modules_screens.append({"screen_name":parametro['screen_name']}) for parametro in kapps_modules_fields if {"screen_name":parametro['screen_name']} not in kapps_modules_screens]
+    
+
     return render_template(
         "home.html"
         , kapps_info=kapps_info
@@ -195,6 +238,8 @@ def kappconf():
         , kapps_modules = kapps_modules
         , kapps_parameters = kapps_parameters
         , kapps_parameters_cats = kapps_parameters_cats
+        , kapps_modules_fields = kapps_modules_fields
+        , kapps_modules_screens = kapps_modules_screens
         )
 
 
