@@ -370,21 +370,15 @@ var btnsGuardarCampo = document.getElementsByClassName('btnGuardarCampo');
 for (let btn of btnsGuardarCampo) {
     btn.onclick = function () {
         campoId = this.getAttributeNode('data-campo-id').value;
-        alert("SI")
-        // document.getElementById("modal-crud-kapp-titulo").textContent = "Guardar KAPP";
-        // document.getElementById("modal-crud-kapp-btn").hidden = false;
-
-        if (document.getElementById("field_name-" + campoId).value.length <= 2) {
-            // document.getElementById("modal-crud-kapp-btn").hidden = true;
-            // document.getElementById("modal-crud-kapp-body").innerHTML = 'El nombre de Cliente para la KAPP debe ser mayor a 5 Caracteres'
-            // modalCrudKapp.show()
+         if (document.getElementById("field_name-" + campoId).value.length <= 2) {
         } else {
-
+            is_active=false
+            if (document.getElementById('is_active-' + campoId).checked) is_active=true
             var pl = JSON.stringify({
                 accion: '0'
                 , campoId: campoId
                 , field_name: document.getElementById('field_name-' + campoId).value
-                , is_active: document.getElementById('is_active-' + campoId).value
+                , is_active: is_active
 
             });
             let myPromise = new Promise((resolve, reject) => {
@@ -405,4 +399,14 @@ for (let btn of btnsGuardarCampo) {
 
         };
     }
+}
+
+var fieldsCampo = document.getElementsByClassName('input-campo');
+for (let fieldCampo of fieldsCampo) {
+
+    fieldCampo.addEventListener("change", (event) => {
+        campoId = fieldCampo.getAttributeNode('data-campo-id').value;
+        document.getElementById('div-campo-guardar-'+campoId).hidden = false
+      });
+
 }

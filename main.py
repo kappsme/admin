@@ -379,16 +379,9 @@ def crud_campo():
     cursor.execute("SET session time_zone = '-6:00'")
       
     accion = request.json["accion"]
-    print("update tx.ctz set field_name={0}, is_active={1} where id={2}".format(request.json["field_name"],request.json["is_active"],request.json["campoId"]))
     if accion  == "0":  # ACTUALIZA CAMPO
-        cursor.execute(
-            "update tx.ctz set field_name='%s', is_active=%s where id=%s",
-            (
-                request.json["field_name"],
-                request.json["is_active"],
-                request.json["campoId"]
-            ),
-        )
+        sql = "update tx.ctz set field_name='{0}', is_active={1} where id={2}".format(request.json["field_name"],request.json["is_active"],request.json["campoId"])
+        cursor.execute(sql)
         result, reason = 'success', None
 
     mysqlConn.commit()
