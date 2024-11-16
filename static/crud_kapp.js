@@ -353,7 +353,7 @@ for (let btn of btnsGuardarKappParametros) {
                             accItem.className = "accordion-item"
                             const headerItem = document.createElement("h2")
                             headerItem.className = "accordion-header"
-                            headerItem.innerHTML='<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">'+conf['name']+'</button>'
+                            headerItem.innerHTML = '<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">' + conf['name'] + '</button>'
                             accItem.appendChild(headerItem)
                             accBody.appendChild(accItem);
                         }
@@ -361,5 +361,48 @@ for (let btn of btnsGuardarKappParametros) {
                 })
         })
         modalCrudKappParametros.show()
+    }
+}
+
+
+// BOTON GUARDAR CAMPO
+var btnsGuardarCampo = document.getElementsByClassName('btnGuardarCampo');
+for (let btn of btnsGuardarCampo) {
+    btn.onclick = function () {
+        campoId = this.getAttributeNode('data-campo-id').value;
+        alert("SI")
+        // document.getElementById("modal-crud-kapp-titulo").textContent = "Guardar KAPP";
+        // document.getElementById("modal-crud-kapp-btn").hidden = false;
+
+        if (document.getElementById("field_name-" + campoId).value.length <= 2) {
+            // document.getElementById("modal-crud-kapp-btn").hidden = true;
+            // document.getElementById("modal-crud-kapp-body").innerHTML = 'El nombre de Cliente para la KAPP debe ser mayor a 5 Caracteres'
+            // modalCrudKapp.show()
+        } else {
+
+            var pl = JSON.stringify({
+                accion: '0'
+                , campoId: campoId
+                , field_name: document.getElementById('field_name-' + campoId).value
+                , is_active: document.getElementById('is_active-' + campoId).value
+
+            });
+            let myPromise = new Promise((resolve, reject) => {
+                fetch($SCRIPT_ROOT + '/crud_campo', {
+                    method: "POST",
+                    body: pl,
+                    headers: {
+                        "Content-type": "application/json; charset=UTF-8"
+                    }
+                }).then(response => response.json())
+                    .then(json => {
+                        if (json.result=='success') {
+                            this.hidden = true;
+                        }
+
+                    })
+            })
+
+        };
     }
 }

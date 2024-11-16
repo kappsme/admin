@@ -3,14 +3,15 @@
 
 
 <ul class="nav nav-tabs" id="myTab" role="tablist">
-	
 	{% for modulo in kapps_modules if modulo.estado==0: %}
 	<li class="nav-item" role="presentation">
-	  <button class="nav-link {% if modulo.numreg==0:%}active{% endif %}" id="modulo-{{modulo.id_modulo}}" data-bs-toggle="tab" data-bs-target="#tab-{{modulo.id_modulo}}" type="button" role="tab" aria-controls="tab-{{modulo.id_modulo}}" aria-selected="false">{{modulo.name}}</button>
+	  <button class="nav-link {% if modulo.numreg==0:%}active{% endif %}" id="modulo-{{modulo.id_modulo}}" data-bs-toggle="tab" 
+	  data-bs-target="#tab-{{modulo.id_modulo}}" type="button" role="tab" aria-controls="tab-{{modulo.id_modulo}}" aria-selected="false">{{modulo.name}}</button>
 	</li>
 	{% endfor %}
 </ul>
-  <div class="tab-content" id="myTabContent">
+  
+<div class="tab-content" id="myTabContent">
 	{% for modulo in kapps_modules if modulo.estado==0: %}
 	<div class="tab-pane fade {% if modulo.numreg==0:%}show active{% endif %}" id="tab-{{modulo.id_modulo}}" role="tabpanel" aria-labelledby="modulo-{{modulo.id_modulo}}" tabindex="0">
 		<br>
@@ -21,40 +22,143 @@
 		</div>
 		
 		
-	
 		<div class="accordion accordion-flush" id="modal-kapp-modules-accordionFlush">
+			<div class="accordion-item">
+				<h2 class="accordion-header">
+					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+						data-bs-target="#flush-collapse-{{modulo.id_modulo}}-campos" aria-expanded="false"
+						aria-controls="flush-collapse-{{modulo.id_modulo}}-campos">
+						Campos
+					</button>
+				</h2>
+				<div id="flush-collapse-{{modulo.id_modulo}}-campos" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+					<div class="accordion-body">
+						{% for screen in kapps_modules_screens if screen.module_name==modulo.name: %}
+							<div class="accordion-item">
+								<h2 class="accordion-header">
+									<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+										data-bs-target="#flush-collapse-{{modulo.name}}{{screen.id_module_screen}}" aria-expanded="false"
+										aria-controls="flush-collapse-{{modulo.name}}{{screen.id_module_screen}}">
+										{{screen.screen_name}}
+									</button>
+								</h2>
+								<div id="flush-collapse-{{modulo.name}}{{screen.id_module_screen}}" class="accordion-collapse collapse"
+										data-bs-parent="#accordionFlushExample">
+										<div class="accordion-body">
+											<table class="table table-hover">
+												<thead>
+													<tr>
+													  <th scope="col">Campo de Sistema</th>
+													  <th scope="col">Campo </th>
+													  <th scope="col">Html Type</th>
+													  <th scope="col">Estado</th>
+													  <th scope="col"></th>
+													</tr>
+												  </thead>
+												<tbody>
+												  	{% for campo in kapps_modules_fields if campo.id_module_screen==screen.id_module_screen: %}														
+														<tr>
+															<td>
+																{% if campo.system_field_name: %}	
+																	{{ campo.system_field_name }}
+																{% endif %}
+															</td>
+															<td>
+																<input type="text" value="{{campo.field_name}}" id="field_name-{{campo.id}}" class="input-campo"
+																data-campo-id="{{campo.id}}"
+																{% if not campo.is_customizable: %}disabled{% endif %}>
+															</td>
+															<td>
+																<select name="html_type-{{campo.id}}" id="html_type-{{campo.id}}" disabled>
+																	{% for html_type in html_types: %}	
+																		<option value={{html_type.id}}>{{html_type.html_type}}</option> 																	
+																	{% endfor %}
+																  </select>
+																  <script>
+																	document.getElementById('html_type-{{campo.id}}').selectedIndex = {{ campo.html_type_id-1}}
+																</script>
+															</td>
+															<td> 
+																<input type="checkbox" id="is_active-{{campo.id}}"
+																{% if campo.is_active: %}	
+																	checked
+																{% endif %}
+																{% if not campo.is_customizable: %}disabled{% endif %}
+																data-campo-id="{{campo.id}}"
+																class="input-campo">
+															</td>
+															<td>
+																<!--GUARDAR CAMPO -->
+																<div id="div-campo-guardar-{{campo.id}}" class="col py-1" >
+																	<button id="btn-guardar-campo" name="btn-guardar-campo" type="submit"
+																		class="btnGuardarCampo btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
+																		data-campo-id="{{campo.id}}">
+																		<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}" alt="Guardar"
+																			class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Guardar">
+																	</button>
+																</div>
 
-			{% for cat in kapps_parameters_cats if cat.id_modulo==modulo.id_modulo: %}
-				<div class="accordion-item">
-					<h2 class="accordion-header">
-						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-							data-bs-target="#flush-collapse-{{modulo.id_modulo}}{{cat.category}}" aria-expanded="false"
-							aria-controls="flush-collapse-{{modulo.id_modulo}}{{cat.category}}">
-							{{cat.category}}
-						</button>
-					</h2>
-					<div id="flush-collapse-{{modulo.id_modulo}}{{cat.category}}" class="accordion-collapse collapse"
-							data-bs-parent="#accordionFlushExample">
-							<div class="accordion-body">
-							{% for parametro in kapps_parameters if parametro.id_modulo==modulo.id_modulo and parametro.category==cat.category: %}
-								<div class="row mb-3 border-bottom">
-									<label for="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" class="col-sm-2 col-form-label col-form-label-sm">{{ parametro.nombre }}</label>
-									<div class="col-sm-10">
-										{% if parametro.html_type == 'textarea': %}
-										<textarea id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" class ="confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" {{ parametro.html_additional }}>{{parametro.valor}}</textarea>
-										{% else: %}
-										<input id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" type="{{parametro.html_type}}" {{ parametro.html_additional }} class="form-control form-control-sm confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" placeholder="" value="{{parametro.valor}}">
-										{% endif %}
-									</div>
+															</td>															
+														</tr>
+													{% endfor %}
+													</tbody>
+											</table>
+
+										</div>
 								</div>
-							{% endfor %}
 							</div>
+						{% endfor %}
 					</div>
 				</div>
-			{% endfor %}
-
-
+			</div>
 		</div>
+
+
+				
+		<div class="accordion accordion-flush" id="modal-kapp-modules-accordionFlush">
+			<div class="accordion-item">
+				<h2 class="accordion-header">
+					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+						data-bs-target="#flush-collapse-{{modulo.id_modulo}}-parametros" aria-expanded="false"
+						aria-controls="flush-collapse-{{modulo.id_modulo}}-parametros">
+						Parametros
+					</button>
+				</h2>
+				<div id="flush-collapse-{{modulo.id_modulo}}-parametros" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+					<div class="accordion-body">
+						{% for cat in kapps_parameters_cats if cat.id_modulo==modulo.id_modulo: %}
+							<div class="accordion-item">
+								<h2 class="accordion-header">
+									<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+										data-bs-target="#flush-collapse-{{modulo.id_modulo}}{{cat.category}}" aria-expanded="false"
+										aria-controls="flush-collapse-{{modulo.id_modulo}}{{cat.category}}">
+										{{cat.category}}
+									</button>
+								</h2>
+								<div id="flush-collapse-{{modulo.id_modulo}}{{cat.category}}" class="accordion-collapse collapse"
+										data-bs-parent="#accordionFlushExample">
+										<div class="accordion-body">
+										{% for parametro in kapps_parameters if parametro.id_modulo==modulo.id_modulo and parametro.category==cat.category: %}
+											<div class="row mb-3 border-bottom">
+												<label for="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" class="col-sm-2 col-form-label col-form-label-sm">{{ parametro.nombre }}</label>
+												<div class="col-sm-10">
+													{% if parametro.html_type == 'textarea': %}
+													<textarea id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" class ="confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" {{ parametro.html_additional }}>{{parametro.valor}}</textarea>
+													{% else: %}
+													<input id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" type="{{parametro.html_type}}" {{ parametro.html_additional }} class="form-control form-control-sm confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" placeholder="" value="{{parametro.valor}}">
+													{% endif %}
+												</div>
+											</div>
+										{% endfor %}
+										</div>
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+			</div>
+		</div>
+
 
 	</div>
 	{% endfor %}

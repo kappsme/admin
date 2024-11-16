@@ -189,15 +189,16 @@ def kappconf():
     cursor.execute("""
                 select * from 
                    (SELECT ctz.id id, ctz_base.field_name system_field_name
-                        , case when id_ctz_base is not null then ctz.field_name else ctz.field_name end field_NAME
+                        , ctz.field_name field_name
                         , screen_name
+                        , ctz.id_module_screen
                         , case when id_ctz_base is not null then ctz_ft2.tag else ctz_ft.tag end tag
-                        , case when id_ctz_base is not null then ctz_ft2.html_type else ctz_ft.html_type end html_type
+                        , case when id_ctz_base is not null then ctz_ft2.id else ctz_ft.id end html_type_id
                         , name module_name
-                        -- , ctz_module_screens.id_module_cat
-                        -- ,  ctz.*, ctz_base.*  , ctz_module_screens.*, ctz_ft.*
+                        , 1 is_customizable
+                        , ctz.is_active
                         from tx.ctz left join tx.ctz_base 
-                                        on id_kapp=%s and ctz.id_ctz_base=ctz_base.id and ctz.id_module_screen=ctz_base.id_module_screen
+                                        on id_kapp=%s and ctz.id_ctz_base=ctz_base.id
                                     left join tx.ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
                                     left join tx.ctz_ft on ctz.id_field_type = ctz_ft.id 
                                     left join tx.ctz_ft ctz_ft2 on ctz_base.id_field_type = ctz_ft2.id
@@ -205,29 +206,34 @@ def kappconf():
                                     left join kapps_db.kapps_modules_cat kmc on  km.module_id=kmc.id
                     union all
                     SELECT null id, ctz.field_name system_field_name
-                        , null field_name 
+                        , ctz.field_name
                         , screen_name
+                        , ctz.id_module_screen
                         , ctz_ft.tag 
-                        , ctz_ft.html_type
-                        -- , ctz.id_module_cat
+                        , ctz_ft.id
                         , name module_name
+                        , is_customizable
+                        , ctz.is_active 
                         from tx.ctz_base ctz
                                     left join tx.ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
                                     left join tx.ctz_ft on ctz.id_field_type = ctz_ft.id
                                     left join kapps_db.kapps_modules km on km.kapp_id=%s and km.module_id = ctz_module_screens.id_module_cat
                                     left join kapps_db.kapps_modules_cat kmc on  km.module_id=kmc.id
-                        where ctz.id not in (select id_ctz_base from ctz where id_kapp=1 and id_ctz_base is not null)
+                        where ctz.id not in (select id_ctz_base from ctz where id_kapp=%s and id_ctz_base is not null)
                         ) t
-                        order by screen_name, id asc, system_field_name asc
+                        order by screen_name, is_active desc, id asc, system_field_name asc
                    """,
             (
-                id_kapp, id_kapp,
+                id_kapp, id_kapp,id_kapp
             ),
         )
     kapps_modules_fields = cursor.fetchall()
     kapps_modules_screens = []
-    [kapps_modules_screens.append({"screen_name":parametro['screen_name']}) for parametro in kapps_modules_fields if {"screen_name":parametro['screen_name']} not in kapps_modules_screens]
+    [kapps_modules_screens.append({"module_name":parametro['module_name'], "screen_name":parametro['screen_name'],"id_module_screen":parametro['id_module_screen']}) for parametro in kapps_modules_fields if {"module_name":parametro['module_name'], "screen_name":parametro['screen_name'], "screen_name":parametro['screen_name'], "id_module_screen":parametro['id_module_screen']} not in kapps_modules_screens]
     
+    cursor.execute("""select id, html_type from ctz_ft where state=1""")
+    html_types = cursor.fetchall()
+
 
     return render_template(
         "home.html"
@@ -240,6 +246,7 @@ def kappconf():
         , kapps_parameters_cats = kapps_parameters_cats
         , kapps_modules_fields = kapps_modules_fields
         , kapps_modules_screens = kapps_modules_screens
+        , html_types=html_types
         )
 
 
@@ -361,6 +368,34 @@ def crud_kapp():
     mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}
+
+
+@kapps_admin.route("/crud_campo", methods=["POST","GET"])
+def crud_campo():
+    result, reason, data = 'failed','No Action Specified', None
+    mysqlConn = DBConn()
+    cursor = mysqlConn.cursor(dictionary=True)
+    cursor.execute('SET lc_time_names = "es_ES"')
+    cursor.execute("SET session time_zone = '-6:00'")
+      
+    accion = request.json["accion"]
+    print("update tx.ctz set field_name={0}, is_active={1} where id={2}".format(request.json["field_name"],request.json["is_active"],request.json["campoId"]))
+    if accion  == "0":  # ACTUALIZA CAMPO
+        cursor.execute(
+            "update tx.ctz set field_name='%s', is_active=%s where id=%s",
+            (
+                request.json["field_name"],
+                request.json["is_active"],
+                request.json["campoId"]
+            ),
+        )
+        result, reason = 'success', None
+
+    mysqlConn.commit()
+    cursor.close()
+    return {'result' : result, 'reason' : reason, 'data' : data}
+
+
 
 
 
