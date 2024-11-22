@@ -370,13 +370,14 @@ var btnsGuardarCampo = document.getElementsByClassName('btnGuardarCampo');
 for (let btn of btnsGuardarCampo) {
     btn.onclick = function () {
         campoId = this.getAttributeNode('data-campo-id').value;
-         if (document.getElementById("field_name-" + campoId).value.length <= 2) {
+        info = this.getAttributeNode('info').value;
+        if (document.getElementById("field_name-" + campoId).value.length <= 2) {
         } else {
-            is_active=false
-            if (document.getElementById('is_active-' + campoId).checked) is_active=true
+            is_active = false
+            if (document.getElementById('is_active-' + campoId).checked) is_active = true
             var pl = JSON.stringify({
                 accion: '0'
-                , campoId: campoId
+                , info: info
                 , field_name: document.getElementById('field_name-' + campoId).value
                 , is_active: is_active
 
@@ -390,8 +391,8 @@ for (let btn of btnsGuardarCampo) {
                     }
                 }).then(response => response.json())
                     .then(json => {
-                        if (json.result=='success') {
-                            this.hidden = true;
+                        if (json.result == 'success') {
+                            document.getElementById('div-campo-guardar-' + campoId).hidden = true;
                         }
 
                     })
@@ -403,10 +404,10 @@ for (let btn of btnsGuardarCampo) {
 
 var fieldsCampo = document.getElementsByClassName('input-campo');
 for (let fieldCampo of fieldsCampo) {
-
     fieldCampo.addEventListener("change", (event) => {
         campoId = fieldCampo.getAttributeNode('data-campo-id').value;
-        document.getElementById('div-campo-guardar-'+campoId).hidden = false
-      });
-
+        document.getElementById('div-campo-guardar-' + campoId).hidden = false
+    });
 }
+
+

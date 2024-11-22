@@ -5,23 +5,24 @@
 <ul class="nav nav-tabs" id="myTab" role="tablist">
 	{% for modulo in kapps_modules if modulo.estado==0: %}
 	<li class="nav-item" role="presentation">
-	  <button class="nav-link {% if modulo.numreg==0:%}active{% endif %}" id="modulo-{{modulo.id_modulo}}" data-bs-toggle="tab" 
-	  data-bs-target="#tab-{{modulo.id_modulo}}" type="button" role="tab" aria-controls="tab-{{modulo.id_modulo}}" aria-selected="false">{{modulo.name}}</button>
+		<button class="nav-link {% if modulo.numreg==0:%}active{% endif %}" id="modulo-{{modulo.id_modulo}}"
+			data-bs-toggle="tab" data-bs-target="#tab-{{modulo.id_modulo}}" type="button" role="tab"
+			aria-controls="tab-{{modulo.id_modulo}}" aria-selected="false">{{modulo.name}}</button>
 	</li>
 	{% endfor %}
 </ul>
-  
 <div class="tab-content" id="myTabContent">
 	{% for modulo in kapps_modules if modulo.estado==0: %}
-	<div class="tab-pane fade {% if modulo.numreg==0:%}show active{% endif %}" id="tab-{{modulo.id_modulo}}" role="tabpanel" aria-labelledby="modulo-{{modulo.id_modulo}}" tabindex="0">
+	<div class="tab-pane fade {% if modulo.numreg==0:%}show active{% endif %}" id="tab-{{modulo.id_modulo}}"
+		role="tabpanel" aria-labelledby="modulo-{{modulo.id_modulo}}" tabindex="0">
 		<br>
 		<div class="modal-header">
 			<h6 class="modal-title text-primary" style="font-size:1.1rem">
 				{{modulo.description}}
 			</h6>
 		</div>
-		
-		
+
+
 		<div class="accordion accordion-flush" id="modal-kapp-modules-accordionFlush">
 			<div class="accordion-item">
 				<h2 class="accordion-header">
@@ -31,90 +32,176 @@
 						Campos
 					</button>
 				</h2>
-				<div id="flush-collapse-{{modulo.id_modulo}}-campos" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+				<div id="flush-collapse-{{modulo.id_modulo}}-campos" class="accordion-collapse collapse"
+					data-bs-parent="#accordionFlushExample">
 					<div class="accordion-body">
 						{% for screen in kapps_modules_screens if screen.module_name==modulo.name: %}
-							<div class="accordion-item">
-								<h2 class="accordion-header">
-									<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-										data-bs-target="#flush-collapse-{{modulo.name}}{{screen.id_module_screen}}" aria-expanded="false"
-										aria-controls="flush-collapse-{{modulo.name}}{{screen.id_module_screen}}">
-										{{screen.screen_name}}
+						<div class="accordion-item">
+							<h2 class="accordion-header bg-warning">
+								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+									data-bs-target="#flush-collapse-{{modulo.name}}{{screen.id_module_screen}}"
+									aria-expanded="false"
+									aria-controls="flush-collapse-{{modulo.name}}{{screen.id_module_screen}}">
+									{{screen.screen_name}}
+								</button>
+							</h2>
+							<div id="flush-collapse-{{modulo.name}}{{screen.id_module_screen}}"
+								class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+								<div class="accordion-body">
+									<table class="table table-hover" id="table-{{screen.id_module_screen}}">
+										<thead>
+											<tr>
+												<th scope="col">Campo de Sistema</th>
+												<th scope="col">Campo </th>
+												<th scope="col">Html Type</th>
+												<th scope="col">Estado</th>
+												<th scope="col"></th>
+											</tr>
+										</thead>
+										<tbody>
+											{% for campo in kapps_modules_fields if
+											campo.id_module_screen==screen.id_module_screen: %}
+											<tr>
+												<td>
+													{% if campo.system_field_name: %}
+													{{ campo.system_field_name }}
+													{% endif %}
+												</td>
+												<td>
+													<input type="text" value="{{campo.field_name}}"
+														id="field_name-{{campo.id}}-{{campo.id_ctz_base}}"
+														class="input-campo"
+														data-campo-id="{{campo.id}}-{{campo.id_ctz_base}}" {% if not
+														campo.is_customizable: %}disabled{% endif %}>
+												</td>
+												<td>
+													<select name="html_type-{{campo.id}}-{{campo.id_ctz_base}}"
+														id="html_type-{{campo.id}}-{{campo.id_ctz_base}}" disabled>
+														{% for html_type in html_types: %}
+														<option value={{html_type.id}}>{{html_type.html_type}}</option>
+														{% endfor %}
+													</select>
+													<script>
+														document.getElementById('html_type-{{campo.id}}-{{campo.id_ctz_base}}').selectedIndex = {{ campo.html_type_id - 1 }}
+													</script>
+												</td>
+												<td>
+													<input type="checkbox"
+														id="is_active-{{campo.id}}-{{campo.id_ctz_base}}" {% if
+														campo.is_active: %} checked {% endif %} {% if not
+														campo.is_customizable: %}disabled{% endif %}
+														data-campo-id="{{campo.id}}-{{campo.id_ctz_base}}"
+														class="input-campo">
+												</td>
+												<td>
+													<!--GUARDAR CAMPO -->
+													<div id="div-campo-guardar-{{campo.id}}-{{campo.id_ctz_base}}"
+														class="col py-1" hidden>
+														<button id="btn-guardar-campo" name="btn-guardar-campo"
+															type="submit"
+															class="btnGuardarCampo btn btn-warning p-0 m-0"
+															style="width:1.8rem;height:1.8rem;"
+															data-campo-id="{{campo.id}}-{{campo.id_ctz_base}}"
+															info="{{campo.id}}-{{campo.id_ctz_base}}-{{campo.id_module_screen}}-{{kapps_info[0]['ID KAPP']}}">
+															<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}"
+																alt="Guardar" class="img inline p-0 m-0"
+																style="width:1.7rem;height:1.3rem;" title="Guardar">
+														</button>
+													</div>
+
+												</td>
+											</tr>
+											{% endfor %}
+										</tbody>
+									</table>
+									<button id="btn-add-campo-{{screen.id_module_screen}}-{{kapps_info[0]['ID KAPP']}}"
+										type="button" class="btn btn-success p-0 m-0 btn-add-campo"
+										style="width:2.2rem;height:2.2rem;"
+										info="{{screen.id_module_screen}}-{{kapps_info[0]['ID KAPP']}}"
+										table-id={{screen.id_module_screen}}>
+										<img src="{{ url_for('static', filename='icons_svg/add.svg') }}"
+											alt="Agregar Campo" class="img inline p-0 m-0"
+											style="width:1.9rem;height:1.5rem;" title="Agregar Campo">
 									</button>
-								</h2>
-								<div id="flush-collapse-{{modulo.name}}{{screen.id_module_screen}}" class="accordion-collapse collapse"
-										data-bs-parent="#accordionFlushExample">
-										<div class="accordion-body">
-											<table class="table table-hover">
-												<thead>
-													<tr>
-													  <th scope="col">Campo de Sistema</th>
-													  <th scope="col">Campo </th>
-													  <th scope="col">Html Type</th>
-													  <th scope="col">Estado</th>
-													  <th scope="col"></th>
-													</tr>
-												  </thead>
-												<tbody>
-												  	{% for campo in kapps_modules_fields if campo.id_module_screen==screen.id_module_screen: %}														
-														<tr>
-															<td>
-																{% if campo.system_field_name: %}	
-																	{{ campo.system_field_name }}
-																{% endif %}
-															</td>
-															<td>
-																<input type="text" value="{{campo.field_name}}" id="field_name-{{campo.id}}" class="input-campo"
-																data-campo-id="{{campo.id}}"
-																{% if not campo.is_customizable: %}disabled{% endif %}>
-															</td>
-															<td>
-																<select name="html_type-{{campo.id}}" id="html_type-{{campo.id}}" disabled>
-																	{% for html_type in html_types: %}	
-																		<option value={{html_type.id}}>{{html_type.html_type}}</option> 																	
-																	{% endfor %}
-																  </select>
-																  <script>
-																	document.getElementById('html_type-{{campo.id}}').selectedIndex = {{ campo.html_type_id-1}}
-																</script>
-															</td>
-															<td> 
-																<input type="checkbox" id="is_active-{{campo.id}}"
-																{% if campo.is_active: %}	
-																	checked
-																{% endif %}
-																{% if not campo.is_customizable: %}disabled{% endif %}
-																data-campo-id="{{campo.id}}"
-																class="input-campo">
-															</td>
-															<td>
-																<!--GUARDAR CAMPO -->
-																<div id="div-campo-guardar-{{campo.id}}" class="col py-1" hidden>
-																	<button id="btn-guardar-campo" name="btn-guardar-campo" type="submit"
-																		class="btnGuardarCampo btn btn-warning p-0 m-0" style="width:1.8rem;height:1.8rem;"
-																		data-campo-id="{{campo.id}}">
-																		<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}" alt="Guardar"
-																			class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Guardar">
-																	</button>
-																</div>
+									<script type=text/javascript>
+													btn = document.getElementById('btn-add-campo-{{screen.id_module_screen}}-{{kapps_info[0]["ID KAPP"]}}')
+													var randomNumber = Math.floor(Math.random() * (12000 - 5000 + 1)) + 5000;
+													btn.addEventListener('click', (event) => {
+														randomNumber+=1
+														var table = document.getElementById('table-{{screen.id_module_screen}}')
+														var row = table.insertRow();
 
-															</td>															
-														</tr>
-													{% endfor %}
-													</tbody>
-											</table>
+														// create new table cells
+														var cell_system_field = row.insertCell();
+														var cell_field_name = row.insertCell();
+														var cell_html_type = row.insertCell();
+														var cell_estado = row.insertCell();
+														var cell_guardar = row.insertCell();
+														
 
-										</div>
+														cell_field_name.innerHTML = '<input type=text value="" id="field_name-'+randomNumber+'">'
+														cell_html_type.innerHTML = '<select id="html_type-'+randomNumber+'">' +
+															{% for html_type in html_types: %}
+															'<option value={{html_type.id}}>{{html_type.html_type}}</option>' +
+															{% endfor %}
+														'</select>';
+														cell_estado.innerHTML = '<input type=checkbox id="is_active-'+randomNumber+'" checked>'
+														cell_guardar.innerHTML = '<button id="btn-guardar-campo-'+randomNumber + '" type="submit" class="btnGuardarCampoExtra btn btn-warning p-0 m-0" ' +
+																'style="width:1.8rem;height:1.8rem;" data-campo-id='+randomNumber + ' ' +
+																'info="0-0-{{screen.id_module_screen}}-{{kapps_info[0]["ID KAPP"]}}"> ' +
+																'<img src="{{ url_for("static", filename="icons_svg/update1.svg") }}" alt="Guardar" class="img inline p-0 m-0" ' +
+																'style="width:1.7rem;height:1.3rem;" title="Guardar"></button>'
+													
+														var btnGuardarCampoExtra = document.getElementById('btn-guardar-campo-'+randomNumber);
+														
+														btnGuardarCampoExtra.onclick = function () {
+																			campoId = this.getAttributeNode('data-campo-id').value;
+																			info = this.getAttributeNode('info').value;
+																			if (document.getElementById("field_name-" + campoId).value.length <= 2) {
+																			} else {
+																				is_active = false
+																				if (document.getElementById('is_active-' + campoId).checked) is_active = true
+																				var pl = JSON.stringify({
+																					accion: '0'
+																					, info: info
+																					, field_name: document.getElementById('field_name-' + campoId).value
+																					, is_active: is_active
+																					, selected_html_type: document.getElementById('html_type-' + campoId).value
+																				});
+																				let myPromise = new Promise((resolve, reject) => {
+																					fetch($SCRIPT_ROOT + '/crud_campo', {
+																						method: "POST",
+																						body: pl,
+																						headers: {
+																							"Content-type": "application/json; charset=UTF-8"
+																						}
+																					}).then(response => response.json())
+																						.then(json => {
+																							if (json.result == 'success') {
+																								this.hidden = true;
+																							}
+
+																						})
+																})
+
+															};
+														}
+
+
+
+													})
+
+									</script>
 								</div>
 							</div>
+
+						</div>
 						{% endfor %}
 					</div>
 				</div>
 			</div>
 		</div>
 
-
-				
 		<div class="accordion accordion-flush" id="modal-kapp-modules-accordionFlush">
 			<div class="accordion-item">
 				<h2 class="accordion-header">
@@ -124,35 +211,45 @@
 						Parametros
 					</button>
 				</h2>
-				<div id="flush-collapse-{{modulo.id_modulo}}-parametros" class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+				<div id="flush-collapse-{{modulo.id_modulo}}-parametros" class="accordion-collapse collapse"
+					data-bs-parent="#accordionFlushExample">
 					<div class="accordion-body">
 						{% for cat in kapps_parameters_cats if cat.id_modulo==modulo.id_modulo: %}
-							<div class="accordion-item">
-								<h2 class="accordion-header">
-									<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-										data-bs-target="#flush-collapse-{{modulo.id_modulo}}{{cat.category}}" aria-expanded="false"
-										aria-controls="flush-collapse-{{modulo.id_modulo}}{{cat.category}}">
-										{{cat.category}}
-									</button>
-								</h2>
-								<div id="flush-collapse-{{modulo.id_modulo}}{{cat.category}}" class="accordion-collapse collapse"
-										data-bs-parent="#accordionFlushExample">
-										<div class="accordion-body">
-										{% for parametro in kapps_parameters if parametro.id_modulo==modulo.id_modulo and parametro.category==cat.category: %}
-											<div class="row mb-3 border-bottom">
-												<label for="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" class="col-sm-2 col-form-label col-form-label-sm">{{ parametro.nombre }}</label>
-												<div class="col-sm-10">
-													{% if parametro.html_type == 'textarea': %}
-													<textarea id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" class ="confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" {{ parametro.html_additional }}>{{parametro.valor}}</textarea>
-													{% else: %}
-													<input id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}" type="{{parametro.html_type}}" {{ parametro.html_additional }} class="form-control form-control-sm confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" placeholder="" value="{{parametro.valor}}">
-													{% endif %}
-												</div>
-											</div>
-										{% endfor %}
+						<div class="accordion-item">
+							<h2 class="accordion-header">
+								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+									data-bs-target="#flush-collapse-{{modulo.id_modulo}}{{cat.category}}"
+									aria-expanded="false"
+									aria-controls="flush-collapse-{{modulo.id_modulo}}{{cat.category}}">
+									{{cat.category}}
+								</button>
+							</h2>
+							<div id="flush-collapse-{{modulo.id_modulo}}{{cat.category}}"
+								class="accordion-collapse collapse" data-bs-parent="#accordionFlushExample">
+								<div class="accordion-body">
+									{% for parametro in kapps_parameters if parametro.id_modulo==modulo.id_modulo and
+									parametro.category==cat.category: %}
+									<div class="row mb-3 border-bottom">
+										<label for="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+											class="col-sm-2 col-form-label col-form-label-sm">{{ parametro.nombre
+											}}</label>
+										<div class="col-sm-10">
+											{% if parametro.html_type == 'textarea': %}
+											<textarea id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+												class="confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" {{
+												parametro.html_additional }}>{{parametro.valor}}</textarea>
+											{% else: %}
+											<input id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+												type="{{parametro.html_type}}" {{ parametro.html_additional }}
+												class="form-control form-control-sm confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+												placeholder="" value="{{parametro.valor}}">
+											{% endif %}
 										</div>
+									</div>
+									{% endfor %}
 								</div>
 							</div>
+						</div>
 						{% endfor %}
 					</div>
 				</div>
@@ -162,7 +259,7 @@
 
 	</div>
 	{% endfor %}
-  </div>
+</div>
 
 
 {% endblock %}
