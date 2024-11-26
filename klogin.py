@@ -110,7 +110,7 @@ def klogin(aplication_id, kapp_id="", url_code=""):
                     [account['id']],
                 )
                 resultado=cursor.fetchone()
-                resultado = dict(zip(cursor.column_names, resultado)) if cursor.rowcount >= 0 else None
+                # resultado = dict(zip(cursor.column_names, resultado)) if cursor.rowcount >= 0 else None
                 # print(cursor.statement)
                 # print(cursor.rowcount)
                 
