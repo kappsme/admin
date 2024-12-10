@@ -371,8 +371,8 @@ def crud_campo():
     accion = request.json["accion"]
     if accion  == "0":  # ACTUALIZA CAMPO
         ids = request.json["info"].split("-")  # id 0 = ctz_id, 1 = ctz_base, 2 = id_module_screen, 3 = id_kapp
-        print(str(ids))
-        print (str(request.json["selected_html_type"]))
+        # print(str(ids))
+        # print (str(request.json["selected_html_type"]))
         if ids[0] == "0" and ids[1] != "0": # ctz id
             sql = """insert into tx.ctz (id_kapp, id_module_screen, field_name, id_ctz_base, is_active) 
                 values({0}, {1}, '{2}', {3}, {4})""".format(ids[3],ids[2], request.json["field_name"],ids[1],request.json["is_active"])

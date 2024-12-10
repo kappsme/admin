@@ -88,8 +88,8 @@
 												<td>
 													<input type="checkbox"
 														id="is_active-{{campo.id}}-{{campo.id_ctz_base}}" {% if
-														campo.is_active: %} checked {% endif %} {% if not
-														campo.is_customizable: %}disabled{% endif %}
+														campo.is_active: %} checked {% endif %} 
+														{% if campo.id_ctz_base!=0: %}disabled{% endif %}
 														data-campo-id="{{campo.id}}-{{campo.id_ctz_base}}"
 														class="input-campo">
 												</td>
