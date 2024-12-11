@@ -303,7 +303,7 @@ def crud_kapp():
                 request.json["pagoId"]
             ),
         )
-        print(">>>> " + request.json["pagoId"])
+        print("> " + request.json["pagoId"])
         result, reason, data = 'success', None, None
     elif accion == "5":  # Configuracion LOAD
         cursor.execute(
