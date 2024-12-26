@@ -70,7 +70,7 @@
 												<td>
 													<input type="text" value="{{campo.field_name}}"
 														id="field_name-{{campo.id}}-{{campo.id_ctz_base}}"
-														class="input-campo"
+														class="input-campo {% if campo.id==0: %}bg-danger{% endif %}"
 														data-campo-id="{{campo.id}}-{{campo.id_ctz_base}}" {% if not
 														campo.is_customizable: %}disabled{% endif %}>
 												</td>
