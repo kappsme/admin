@@ -82,22 +82,14 @@ def datos_kapp(id_kapp=None):
     mysql=DBConn()
     cursor = mysql.cursor(dictionary=True)
     cursor.execute('SET lc_time_names = "es_ES"')
-    sql =  """select k.id "ID KAPP", k.clave "CLAVE", k.name "NOMBRE", state "ESTADO", date(k.fecha_cobro) "FECHA COBRO"
-                , ifnull(datediff(now(),DATE_ADD(date_format(concat(ifnull(max(periodo), CAST(date_format(fecha_cobro,"%Y%m") AS CHAR CHARACTER SET utf8))
-                        ,CAST(date_format(fecha_cobro,"%d") AS CHAR CHARACTER SET utf8)),"%Y%m%d"),INTERVAL 1 MONTH)),0) "DIAS ATRASO" 
-                , licencias "LICENCIAS" 
-                , dias_vencimiento "DIAS VENCIMIENTO"
-                , count(distinct ka.username) "CUENTAS ACTIVAS" 
-                , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES
-                , SUBSTRING(max(periodo), 1, 4) ULTIMOPAGO_YEAR
-                , IFNULL(GROUP_CONCAT(DISTINCT KMC.name SEPARATOR ' -\n') ,'') AS CONF
-            from kapps_db.kapps k left join kapps_db.pagos kp on kp.kapp_id=k.id and kp.estado=1
-            left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1
-            LEFT JOIN kapps_db.kapps_modules KM ON KM.kapp_id = k.id
-            LEFT JOIN kapps_db.kapps_modules_cat KMC ON KMC.id = KM.module_id """
-    if id_kapp:
-       sql+="where k.id={} ".format(id_kapp) 
-    sql+=" group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento"
+    sql =  """
+    select id_elemento,
+concat('{',IFNULL(GROUP_CONCAT(DISTINCT concat("'", ed.id_ctz,"':'",valor,"'") SEPARATOR ',') ,''),"}") AS CONF
+ from tx.elementos_datos ed left join tx.elementos e on e.id=ed.id_elemento	
+where id_kapp=1 and id_module_cat=3 and 
+e.id in (select id_elemento from tx.elementos_datos where id_ctz in (1,7,8) and valor like '%CC%')
+group by id_elemento
+    """
     cursor.execute(sql)
     kapps_info, columnas  = cursor.fetchall(), cursor.column_names
     cursor.close()
