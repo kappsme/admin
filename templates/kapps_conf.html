@@ -88,8 +88,8 @@
 												<td>
 													<input type="checkbox"
 														id="is_active-{{campo.id}}-{{campo.id_ctz_base}}" {% if
-														campo.is_active: %} checked {% endif %} 
-														{% if campo.id_ctz_base!=0: %}disabled{% endif %}
+														campo.is_active: %} checked {% endif %} {% if
+														campo.id_ctz_base!=0: %}disabled{% endif %}
 														data-campo-id="{{campo.id}}-{{campo.id_ctz_base}}"
 														class="input-campo">
 												</td>
@@ -106,6 +106,21 @@
 															<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}"
 																alt="Guardar" class="img inline p-0 m-0"
 																style="width:1.7rem;height:1.3rem;" title="Guardar">
+														</button>
+													</div>
+													<!--AGREGAR OPCION -->
+													<div id="div-agregar-opcion-{{campo.id}}-{{campo.id_ctz_base}}"
+														class="col py-1" {% if campo.html_type_id !=6: %}hidden{% endif
+														%}>
+														<button id="btn-agregar-opcion" name="btn-agregar-opcion"
+															type="button" data-bs-toggle="modal"
+															data-bs-target="#modal-agregar-opciones"
+															class="btnAgregarOpcion btn btn-secondary p-0 m-0"
+															style="width:1.8rem;height:1.8rem;"
+															data-campo-id="{{campo.id}}">
+															<img src="{{ url_for('static', filename='icons_svg/edit1.svg') }}"
+																alt="Agregar" class="img inline p-0 m-0"
+																style="width:1.7rem;height:1.3rem;" title="Agregar">
 														</button>
 													</div>
 
@@ -259,6 +274,66 @@
 
 	</div>
 	{% endfor %}
+</div>
+
+<!-- MODAL ADD OPCIONES -->
+<div class="modal fade" id="modal-agregar-opciones" tabindex="-1" role="dialog" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-scrollable" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title text-primary" style="font-size:0.9rem" id="exampleModalLabel">Editar Opciones de
+					Campo
+				</h5>
+
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+
+			</div>
+			<div class="modal-body">
+				<div class="form-row my-0 py-0">
+					<div class="form-group col-8">
+						<input type="text" id="modal-agregar-opcion" class="form-control">
+					</div>
+					<div class="form-group col-2">
+						<button id="btn-add-opcion" type="button" class="btn btn-success p-0 m-0 btn-add-opcion"
+							style="float:left;width:2rem;height:2rem;"
+							data-campo-id="">
+							<img src="{{ url_for('static', filename='icons_svg/add.svg') }}" alt="Agregar Opcion"
+								class="img inline p-0 m-0" style="width:1.9rem;height:1.5rem;" title="Agregar Opcion">
+						</button>
+					</div>
+				</div>
+				<table class="table table-bordered col-12" id="modal-agregar-opciones-tabla"
+					name="modal-agregar-opciones-tabla">
+					<thead class="bg-primary">
+						<tr style="text-align: center;color: rgb(255, 255, 255);">
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">OPCION
+								</p>
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">ACTIVO
+								</p>
+							</th>
+							<th scope="col" class="p-1 mx-1">
+
+							</th>
+						</tr>
+					</thead>
+					<tbody id="modal-agregar-opciones-tabla-body" name="modal-agregar-opciones-tabla-body">
+
+					</tbody>
+				</table>
+
+
+
+			</div>
+			<div class="modal-footer">
+				<label id="fm-alerta" class="text-danger p-3" style="font-size:0.9rem;display: none;"></label>
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+			</div>
+		</div>
+	</div>
 </div>
 
 

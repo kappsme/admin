@@ -411,3 +411,128 @@ for (let fieldCampo of fieldsCampo) {
 }
 
 
+function loadFieldOptions(id_campo) {
+    var pl = JSON.stringify({
+        accion: '1',
+        id_campo: id_campo
+    });
+    let myPromise = new Promise((resolve, reject) => {
+        fetch($SCRIPT_ROOT + '/crud_campo', {
+            method: "POST",
+            body: pl,
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        }).then(response => response.json())
+            .then(json => {
+                document.getElementById('btn-add-opcion').getAttributeNode('data-campo-id').value = id_campo;
+                const tblBody = document.getElementById("modal-agregar-opciones-tabla-body");
+                tblBody.innerHTML = '';
+
+                // let tabla = document.getElementById('modal-agregar-opciones-tabla');
+                // while (tabla.rows.length > 0) {
+                //     tabla.rows[0].remove();
+                // }
+
+                json.data.forEach((opt) => {
+                    const row = document.createElement("tr");
+                    for (const column of ['value', 'is_active', 'options']) {
+                        const cell = document.createElement("td");
+                        if (column == 'is_active') {
+                            var cellText = "<input type='checkbox' id='is_active-" + opt["id"] + "' class='fieldOption' data-option-id=" + opt["id"]
+                            if (opt[column] == 1) {
+                                cellText += " checked />"
+                            }
+                            else {
+                                cellText += " />"
+                            }
+                        } else if (column == 'options') {
+                            var cellText = '<button id="btn-add-option-' + opt["id"] + '" type="button" class="btn btn-success p-0 m-0 btn-add-option" style = "width:2.2rem;height:2.2rem;" data-field-id="' + opt["id"] + '" hidden>'
+                            cellText += '<img src="/static/icons_svg/save1.svg" alt="Agregar Campo" class="img inline p-0 m-0" style="width:1.9rem;height:1.5rem;" title="Agregar Campo"></button>'
+                        } else {
+                            var cellText = "<input type='text' id='value-" + opt["id"] + "' class='fieldOption' data-option-id=" + opt["id"] + " value='" + opt["value"] + "'/>"
+                        }
+                        cell.innerHTML = cellText
+
+                        row.appendChild(cell);
+                    }
+                    tblBody.appendChild(row);
+                })
+
+                let fieldOptions = document.getElementsByClassName('fieldOption');
+                for (let field of fieldOptions) {
+                    field.addEventListener('change', function () {
+                        document.getElementById('btn-add-option-' + field.getAttributeNode('data-option-id').value).hidden = false
+                    });
+                }
+
+                let btnsAddOption = document.getElementsByClassName('btn-add-option');
+                for (let btn of btnsAddOption) {
+                    btn.addEventListener('click', function () {
+                        id_campo = btn.getAttributeNode('data-field-id').value;
+                        is_active = document.getElementById('is_active-' + id_campo).checked
+                        option_new_value = document.getElementById('value-' + id_campo).value
+                        var pl = JSON.stringify({
+                            accion: '3',
+                            id_campo: id_campo,
+                            option_new_value: option_new_value,
+                            is_active: is_active
+                        });
+                        let myPromise = new Promise((resolve, reject) => {
+                            fetch($SCRIPT_ROOT + '/crud_campo', {
+                                method: "POST",
+                                body: pl,
+                                headers: {
+                                    "Content-type": "application/json; charset=UTF-8"
+                                }
+                            }).then(response => response.json())
+                                .then(json => {
+                                    if (json.result == 'success') {
+                                        document.getElementById('btn-add-option-' + id_campo).hidden = true;
+                                    }
+                                })
+                        })
+                    })
+                }
+            });
+    })
+}
+
+
+// BOTON GUARDAR CAMPO
+var btnsAgregarOpcion = document.getElementsByClassName('btnAgregarOpcion');
+for (let btn of btnsAgregarOpcion) {
+    btn.onclick = function () {
+        id_campo = this.getAttributeNode('data-campo-id').value;
+        document.getElementById("modal-agregar-opcion").value = ""
+        loadFieldOptions(id_campo);
+    }
+}
+
+
+
+// BOTON AGREGAR OPCION A CAMPO
+document.getElementById('btn-add-opcion').onclick = function () {
+    var new_option = document.getElementById("modal-agregar-opcion").value;
+    var id_campo = this.getAttributeNode('data-campo-id').value;
+    if (new_option.length > 0 && id_campo.length > 0) {
+        var pl = JSON.stringify({ accion: '2', id_campo: id_campo, new_option: new_option });
+        let myPromise = new Promise((resolve, reject) => {
+            fetch($SCRIPT_ROOT + '/crud_campo', {
+                method: "POST",
+                body: pl,
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            }).then(response => response.json())
+                .then(json => {
+                    if (json.result == "success") {
+                        loadFieldOptions(id_campo);
+                    }
+                });
+        })
+    }
+};
+
+
+

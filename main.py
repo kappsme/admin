@@ -352,9 +352,8 @@ def crud_kapp():
                     "nivel": 1,
                 }
                 klogin.kcrud_usuario(7,confJson["usuario_nombre"],confJson["usuario_apellido"],newKappId,datos_nuevo_usuario)
-                print("usuario creado")
                 result, reason, data = 'success2', None, None
-
+    
     mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}
@@ -371,8 +370,6 @@ def crud_campo():
     accion = request.json["accion"]
     if accion  == "0":  # ACTUALIZA CAMPO
         ids = request.json["info"].split("-")  # id 0 = ctz_id, 1 = ctz_base, 2 = id_module_screen, 3 = id_kapp
-        # print(str(ids))
-        # print (str(request.json["selected_html_type"]))
         if ids[0] == "0" and ids[1] != "0": # ctz id
             sql = """insert into tx.ctz (id_kapp, id_module_screen, field_name, id_ctz_base, is_active) 
                 values({0}, {1}, '{2}', {3}, {4})""".format(ids[3],ids[2], request.json["field_name"],ids[1],request.json["is_active"])
@@ -380,11 +377,31 @@ def crud_campo():
             sql = "update tx.ctz set field_name='{0}', is_active={1} where id={2}".format(request.json["field_name"],request.json["is_active"],ids[0])
         if ids[0] == "0" and ids[1] == "0": # New Field
             sql = """insert into tx.ctz (id_kapp, id_module_screen, field_name, is_active, id_field_type) 
-                values({0}, {1}, '{2}', {3}, {4})""".format(ids[3],ids[2], request.json["field_name"],request.json["is_active"], request.json["selected_html_type"])
-        
+                values({0}, {1}, '{2}', {3}, {4})""".format(ids[3],ids[2], request.json["field_name"],request.json["is_active"], request.json["selected_html_type"])  
         cursor.execute(sql)
         result, reason = 'success', None
-
+    elif accion == "1":  # LOAD OPCION A CAMPO 
+        id_campo = request.json["id_campo"]
+        cursor.execute("select * from tx.ctz_fto where id_ctz= '{}'".format(id_campo))
+        opciones = cursor.fetchall()
+        result, reason, data = 'success', None, opciones
+    elif accion == "2":  # ADD OPCION A CAMPO 
+        id_campo = request.json["id_campo"]
+        new_option = request.json["new_option"]
+        cursor.execute(
+            "insert into tx.ctz_fto (id_ctz, value, is_active) values (%s,%s,%s)",
+            [id_campo, new_option, 1],
+        )
+        result, reason, data = 'success', None, None
+    elif accion == "3":  # UPDATE OPCION A CAMPO 
+        id_campo = request.json["id_campo"]
+        option_new_value = request.json["option_new_value"]
+        is_active = request.json["is_active"]
+        cursor.execute(
+            "update tx.ctz_fto set value=%s, is_active=%s where id=%s",
+            [option_new_value, is_active, id_campo],
+        )
+        result, reason, data = 'success', None, None
     mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}
