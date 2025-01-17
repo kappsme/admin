@@ -1,20 +1,2 @@
-<<<<<<< HEAD
-# Byte-compiled / optimized / DLL files
-__pycache__/
-
-.env
-
-
-# Flask stuff:
-instance/
-.webassets-cache
-
 # environment
-=======
-# Flask stuff:
-instance/
-.webassets-cache
-
-# environment
->>>>>>> 0d0e7f0a70344cfc391b0b64288ad33b9ff373ba
 .env
