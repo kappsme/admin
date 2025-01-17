@@ -336,7 +336,7 @@ def crud_kapp():
             )
             clave = cursor.fetchone()
             
-            if not clave:
+            if clave:
                 result, reason, data = 'error', 'Código de Clave ya existe', {'clave' : clave}
             else:
                 # cursor.execute(
