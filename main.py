@@ -187,12 +187,13 @@ def kappconf():
                         , ctz.is_active
                         , ifnull(ctz_base.id,Null) id_ctz_base
                         from tx.ctz left join tx.ctz_base 
-                                        on id_kapp=%s and ctz.id_ctz_base=ctz_base.id
+                                        on ctz.id_ctz_base=ctz_base.id
                                     left join tx.ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
                                     left join tx.ctz_ft on ctz.id_field_type = ctz_ft.id 
                                     left join tx.ctz_ft ctz_ft2 on ctz_base.id_field_type = ctz_ft2.id
                                     left join kapps_db.kapps_modules km on km.kapp_id = id_kapp and km.module_id = ctz_module_screens.id_module_cat
                                     left join kapps_db.kapps_modules_cat kmc on  km.module_id=kmc.id
+                        where ctz.id_kapp=%s
                     union all
                     SELECT 0 id, ctz.field_name system_field_name
                         , ctz.field_name
@@ -339,19 +340,19 @@ def crud_kapp():
             if clave:
                 result, reason, data = 'error', 'Código de Clave ya existe', {'clave' : clave}
             else:
-                # cursor.execute(
-                # """ insert into kapps_db.kapps (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values 
-                # (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s) """,
-                # (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
-                # )
+                cursor.execute(
+                """ insert into kapps_db.kapps (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values 
+                (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s) """,
+                (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
+                )
                 #print("last ID: " + str(cursor.lastrowid))
                 # CREA USUARIO AMIND
-                newKappId= 6 # str(cursor.lastrowid)
-                datos_nuevo_usuario = {
-                    "correo": confJson["usuario_email"],
-                    "nivel": 1,
-                }
-                klogin.kcrud_usuario(7,confJson["usuario_nombre"],confJson["usuario_apellido"],newKappId,datos_nuevo_usuario)
+                #newKappId= 6 # str(cursor.lastrowid)
+                #datos_nuevo_usuario = {
+                #    "correo": confJson["usuario_email"],
+                #    "nivel": 1,
+                #}
+                #klogin.kcrud_usuario(7,confJson["usuario_nombre"],confJson["usuario_apellido"],newKappId,datos_nuevo_usuario)
                 result, reason, data = 'success2', None, None
     
     mysqlConn.commit()
