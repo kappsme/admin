@@ -159,11 +159,12 @@ def kappconf():
         )
     kapps_modules = cursor.fetchall()
     
-    cursor.execute("""SELECT txpc.id catalog_id, km.kapp_id, txpc.category, txpc.module_id id_modulo, txpc.nombre, txpc.descripcion, txpc.html_type, txpc.html_additional, txpk.valor  
+    cursor.execute("""SELECT txpc.id catalog_id, txp.id param_id, km.kapp_id, txpc.category, txpc.module_id id_modulo, txpc.nombre, txpc.descripcion, txpc.html_type, txpc.html_additional
+	, IFNULL(txp.valor,txpc.default_value) valor
                     FROM kapps_db.kapps_modules_cat kmc 
                         inner join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
                         left join kapps_db.tx_params_cat txpc on txpc.module_id= km.module_id
-                        left join kapps_db.tx_params_kapp txpk on txpk.tx_params_cat_id=txpc.id and txpk.kapp_id=%s
+                        left join kapps_db.tx_params txp on txp.tx_params_cat_id=txpc.id and txp.kapp_id=%s
                     where type='MAIN' and active=1 and txpc.estado
                     order by txpc.id asc""",
             (

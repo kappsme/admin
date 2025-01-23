@@ -246,19 +246,44 @@
 									parametro.category==cat.category: %}
 									<div class="row mb-3 border-bottom">
 										<label for="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
-											class="col-sm-2 col-form-label col-form-label-sm">{{ parametro.nombre
-											}}</label>
+											class="col-sm-2 col-form-label col-form-label-sm">{{ parametro.nombre}}</label>
 										<div class="col-sm-10">
 											{% if parametro.html_type == 'textarea': %}
 											<textarea id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
-												class="confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" {{
+											data-parametro-id="{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+												class="confparam confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" {{
 												parametro.html_additional }}>{{parametro.valor}}</textarea>
 											{% else: %}
 											<input id="id-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
 												type="{{parametro.html_type}}" {{ parametro.html_additional }}
-												class="form-control form-control-sm confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
-												placeholder="" value="{{parametro.valor}}">
+												class="form-control form-control-sm confparam confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+												placeholder='' 
+												data-parametro-id="{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+
+												{% if parametro.html_type == 'CHECKBOX': %}
+													{% if parametro.valor == '1': %}checked{% endif %}/> 
+												{% else:%}
+													value="{{parametro.valor}}"/>
+												{% endif %}
 											{% endif %}
+
+											<!--GUARDAR PARAMETRO -->
+											<div id="div-parametro-guardar-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+											class="col py-1" hidden>
+											<button id="btn-guardar-parametro" name="btn-guardar-parametro"
+												type="submit"
+												class="btnGuardarParametro btn btn-warning p-0 m-0"
+												style="width:1.8rem;height:1.8rem;"
+												data-parametro-id="{{parametro.kapp_id}}-{{parametro.catalog_id}}"
+												info="{{parametro.kapp_id}}-{{parametro.catalog_id}}">
+												<img src="{{ url_for('static', filename='icons_svg/update1.svg') }}"
+													alt="Guardar" class="img inline p-0 m-0"
+													style="width:1.7rem;height:1.3rem;" title="Guardar">
+											</button>
+										</div>
+
+
+
 										</div>
 									</div>
 									{% endfor %}

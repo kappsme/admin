@@ -536,3 +536,44 @@ document.getElementById('btn-add-opcion').onclick = function () {
 
 
 
+// BOTON GUARDAR PARAMETRO
+var btnsGuardarParametro = document.getElementsByClassName('btnGuardarParametro');
+for (let btn of btnsGuardarParametro) {
+    btn.onclick = function () {
+        campoId = this.getAttributeNode('data-parametro-id').value;
+        info = this.getAttributeNode('info').value;
+        is_active = false
+        if (document.getElementById('is_active-' + campoId).checked) is_active = true
+        var pl = JSON.stringify({
+            accion: '0'
+            , info: info
+            , field_name: document.getElementById('field_name-' + campoId).value
+            , is_active: is_active
+
+        });
+        let myPromise = new Promise((resolve, reject) => {
+            fetch($SCRIPT_ROOT + '/crud_campo', {
+                method: "POST",
+                body: pl,
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                }
+            }).then(response => response.json())
+                .then(json => {
+                    if (json.result == 'success') {
+                        document.getElementById('div-campo-guardar-' + campoId).hidden = true;
+                    }
+
+                })
+        })
+
+    }
+}
+
+var fieldsParametro = document.getElementsByClassName('confparam');
+for (let fieldParametro of fieldsParametro) {
+    fieldParametro.addEventListener("change", (event) => {
+        campoId = fieldParametro.getAttributeNode('data-parametro-id').value;
+        document.getElementById('div-parametro-guardar-' + campoId).hidden = false
+    });
+}
