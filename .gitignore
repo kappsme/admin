@@ -1,4 +1,7 @@
-# environment
+# Environments
 .env
 
-__pycache__
+__pycache__/
+
+# metadatos de Mac OS X
+.DS_Store
