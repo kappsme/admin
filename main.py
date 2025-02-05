@@ -428,7 +428,7 @@ def crud_parameter():
         if is_parametro:
             sql = """update kapps_db.tx_params set valor='{0}' where kapp_id={1} and tx_params_cat_id={2}""".format(new_parameter_value, id_kapp, id_parametro)
         else:
-            sql  = """insert into kapps_db.tx_params (kapp_id, tx_params_cat_id, valor) VALUES ({0},{1},{2})""".format(id_kapp, id_parametro, new_parameter_value)
+            sql  = """insert into kapps_db.tx_params (kapp_id, tx_params_cat_id, valor) VALUES ({0},{1},'{2}')""".format(id_kapp, id_parametro, new_parameter_value)
         cursor.execute(sql)
         success, reason, data = True, 'Parametero Actualizado', None
     mysql.commit()
