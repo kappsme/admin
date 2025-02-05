@@ -140,25 +140,19 @@
 							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar">
 					</button>
 				</div>
-				<!--EDITAR PARAMETROS -->
-				<div id="kapp-{{rmov['ID KAPP']}}-div-editar-parametros" class="col py-1">
-					<button id="btn-editar-kapp-parametros" name="btn-editar-kapp-parametros" type="submit"
-						class="btnEditarKappParametros btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
-						data-kapp-id="{{rmov['ID KAPP']}}">
-						<img src="{{ url_for('static', filename='icons_svg/conf2.svg') }}" alt="Editar Parámetros"
-							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Editar Parámetros">
+
+				<!-- CONDFIGURACION ESPECIFICA POR MODULO-->
+				<div class="col py-1">
+				<form action="{{ url_for('kappconf')}}" method="POST" id="home" name="home">
+					<button type="submit" class="btn btn-primary p-0 m-0"
+					style="width:1.8rem;height:1.8rem;">
+					<img font-color="white"
+					src="{{ url_for('static', filename='icons_svg/taller.svg') }}" alt="Configuracion"
+					style="width:1.7rem;height:1.3rem;" title="Configuracion">
 					</button>
+					<input type="hidden" id="kapp_id" name="kapp_id" value={{rmov['ID KAPP']}} />
+				</form>
 				</div>
-				<!-- HOME TALLER -->
-                                <form action="{{ url_for('kappconf')}}" method="POST" id="home" name="home">
-                                    <button type="submit" class="btn btn-primary p-1 m-2 px-0 mx-0"
-                                    style="height:3rem ;width:3rem">
-                                    <img font-color="white"
-                                    src="{{ url_for('static', filename='icons_svg/taller.svg') }}" alt="Inicio"
-                                    width="30" height="30" title="Inicio">
-                                    <input type="hidden" id="kapp_id" name="kapp_id" value={{rmov['ID KAPP']}} />
-                                </button>
-                </form>
 
 			</td>
 		</tr>

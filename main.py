@@ -410,6 +410,31 @@ def crud_campo():
 
 
 
+@kapps_admin.route("/crud_parametro", methods=["POST","GET"])
+def crud_parameter():
+    result, reason, data = 'failed','No Action Specified', None
+    mysql = DBConn()
+    cursor = mysql.cursor(dictionary=True)
+    cursor.execute('SET lc_time_names = "es_ES"')
+    cursor.execute("SET session time_zone = '-6:00'")
+    accion = request.json["accion"]
+    if accion  == "0":  # ACTUALIZA PARAMETRO
+        ids = request.json["id_parametro"].split("-")  # id 0 = id_kapp, id 1 = id_parametro
+        id_kapp = ids[0]
+        id_parametro = ids[1]
+        new_parameter_value = request.json["new_parameter_value"]
+        cursor.execute("""select 1 from kapps_db.tx_params where kapp_id={0} and tx_params_cat_id={1}""".format(id_kapp, id_parametro))
+        is_parametro = cursor.fetchone()
+        if is_parametro:
+            sql = """update kapps_db.tx_params set valor='{0}' where kapp_id={1} and tx_params_cat_id={2}""".format(new_parameter_value, id_kapp, id_parametro)
+        else:
+            sql  = """insert into kapps_db.tx_params (kapp_id, tx_params_cat_id, valor) VALUES ({0},{1},{2})""".format(id_kapp, id_parametro, new_parameter_value)
+        cursor.execute(sql)
+        success, reason, data = True, 'Parametero Actualizado', None
+    mysql.commit()
+    cursor.close()
+    return {'success' : success, 'reason' : reason, 'data' : data}
+
 
 
 @kapps_admin.route("/nueva", methods=["POST"])

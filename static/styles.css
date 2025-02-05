@@ -28,6 +28,7 @@ body {
     cursor: pointer;
     background-color: #050535;
     border-bottom: 1px solid #d4d4d4;
+    color:white;
 }
 
 
@@ -35,6 +36,8 @@ body {
 
 .autocomplete-items div:hover {
     background-color: #003468 !important;
+    color:rgb(205, 237, 255);
+
 }
 
 

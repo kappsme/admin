@@ -540,19 +540,25 @@ document.getElementById('btn-add-opcion').onclick = function () {
 var btnsGuardarParametro = document.getElementsByClassName('btnGuardarParametro');
 for (let btn of btnsGuardarParametro) {
     btn.onclick = function () {
-        campoId = this.getAttributeNode('data-parametro-id').value;
-        info = this.getAttributeNode('info').value;
-        is_active = false
-        if (document.getElementById('is_active-' + campoId).checked) is_active = true
+        parametroId = this.getAttributeNode('data-parametro-id').value;
+        element=document.getElementById('parametro-' + parametroId)
+        if (element.type == 'checkbox') {
+            if (document.getElementById('parametro-' + parametroId).checked) {
+            new_parameter_value = '1'
+            } else {
+                new_parameter_value = '0'
+            }
+        } else {
+            new_parameter_value = element.value
+        }
+ 
         var pl = JSON.stringify({
-            accion: '0'
-            , info: info
-            , field_name: document.getElementById('field_name-' + campoId).value
-            , is_active: is_active
-
+            accion: '0',
+            id_parametro: parametroId,
+            new_parameter_value: new_parameter_value
         });
         let myPromise = new Promise((resolve, reject) => {
-            fetch($SCRIPT_ROOT + '/crud_campo', {
+            fetch($SCRIPT_ROOT + '/crud_parametro', {
                 method: "POST",
                 body: pl,
                 headers: {
@@ -560,8 +566,8 @@ for (let btn of btnsGuardarParametro) {
                 }
             }).then(response => response.json())
                 .then(json => {
-                    if (json.result == 'success') {
-                        document.getElementById('div-campo-guardar-' + campoId).hidden = true;
+                    if (json.success) {
+                        document.getElementById('div-parametro-guardar-' + parametroId).hidden = true;
                     }
 
                 })
