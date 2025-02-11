@@ -315,5 +315,6 @@ $(document).on('click', '#enviar-nuevo-password', function () {
 });
 
 $('#modal-recuperar-password').on('hidden.bs.modal', function (e) {
-    window.location.replace("https://www.kapps.me/etga");
+    // window.location.replace("https://www.kapps.me/etga");
+    location.reload();
 });
