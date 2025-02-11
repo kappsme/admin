@@ -87,7 +87,7 @@ def klogin(aplication_id, kapp_id="", url_code=""):
             cursor.execute("SET session time_zone = '-6:00'")
             sql="""SELECT a.id, nivel, estado, bloqueo 
                     FROM kapps_db.accounts a
-                    WHERE username = '{}' and estado=1
+                    WHERE username = '{}' and estado=1 and kapp_id=0
                             AND aes_decrypt(password2,UNHEX(SHA2('{}',512))) = '{}'
                 """.format( username, cadena_password, password)
             #print("SQL KLOGIN: "+sql)
