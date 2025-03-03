@@ -96,7 +96,7 @@
 												<td>
 													<!--GUARDAR CAMPO -->
 													<div id="div-campo-guardar-{{campo.id}}-{{campo.id_ctz_base}}"
-														class="col py-1" hidden>
+														class="col py-1" {% if campo.id!=0: %}hidden{% endif %}>
 														<button id="btn-guardar-campo" name="btn-guardar-campo"
 															type="submit"
 															class="btnGuardarCampo btn btn-warning p-0 m-0"

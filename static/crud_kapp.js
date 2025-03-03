@@ -393,11 +393,10 @@ for (let btn of btnsGuardarCampo) {
                     .then(json => {
                         if (json.result == 'success') {
                             document.getElementById('div-campo-guardar-' + campoId).hidden = true;
+                            document.getElementById("field_name-" + campoId).className = "input-campo";
                         }
-
                     })
             })
-
         };
     }
 }
