@@ -33,11 +33,16 @@
 
     <nav class="navbar navbar-expand-lg bg-primary p-0" data-bs-theme="dark">
         <div class="container-fluid">
-            <p class="navbar-brand m-0">KAPPS.me
+            <p class="navbar-brand m-0" onclick="loadPage()">KAPPS.me
                 <small style="font-size:.7rem; color: white; "><br>{{session['clave']}} <em>{{ session['username']
                         }}</em>
                 </small>
             </p>
+            <script>
+            function loadPage() {
+                window.location = "{{ url_for('home') }}"
+            }
+            </script>
 
             <div class="col-3">
                 <div class="container">

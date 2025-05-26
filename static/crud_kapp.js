@@ -58,6 +58,68 @@ function tablaDePagos(kappIDX) {
     });
 }
 
+// Funcion para crear tabla de pagos
+function tablaDeUsuarios(kappIDX) {
+    let myPromise = new Promise((resolve, reject) => {
+        fetch($SCRIPT_ROOT + '/crud_kapp', {
+            method: "POST",
+            body: JSON.stringify(
+                { accion: '8', kapp_id: kappIDX }
+            ),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8"
+            }
+        }).then(response => response.json())
+            .then(json => {
+                if (json.result == "success") {
+                    const tblBody = document.getElementById("modal-kapp-usuarios-tabla-body");
+                    tblBody.innerHTML = '';
+                    // creating all cells
+                    json.data.usuarios.forEach((usuario) => {
+                        const row = document.createElement("tr");
+                        if (usuario['estado'] == 0)
+                            row.classList.add('text-decoration-line-through')
+                        for (const column of ['id', 'username', 'email', 'nivel', 'ultimo_request']) {
+                            const cell = document.createElement("td");
+                            if (column == 'ultimo_request') {
+                                var cellText = "<button id='btn-kapp-anular-sesion' type='button' class='btnAnularSesion p-0 m-0' data-usuario-id='" + usuario['id'] + "'> - </button><br>" + usuario['ultimo_request']
+                                cell.innerHTML = cellText
+                            }
+                            else  {
+                                var cellText = document.createTextNode(usuario[column]);
+                                cell.appendChild(cellText);
+                            }
+                            row.appendChild(cell);
+                        }
+                        tblBody.appendChild(row);
+                    })
+
+                    var btnsVerUsuarioAnular = document.getElementsByClassName('btnAnularSesion');
+                    for (let btn of btnsVerUsuarioAnular) {
+                        btn.onclick = function () {
+                        usuarioId = btn.getAttributeNode('data-usuario-id').value;
+                        var pl = JSON.stringify({ accion: '9', usuarioId: usuarioId });
+                        let myPromise = new Promise((resolve, reject) => {
+                            fetch($SCRIPT_ROOT + '/crud_kapp', {
+                                method: "POST",
+                                body: pl,
+                                headers: {
+                                    "Content-type": "application/json; charset=UTF-8"
+                                }
+                            }).then(response => response.json())
+                                .then(json => {
+                                    tablaDeUsuarios(kappIDX)
+                                });
+                        })
+                    };
+
+
+                    }
+                }
+            });
+    });
+}
+
 var kappId = -1;
 
 // VER PAGOS
@@ -92,7 +154,15 @@ for (let btn of btnsVerPagos) {
     };
 }
 
-
+// VER USERS
+var btnsVerUsuarios = document.getElementsByClassName('btnVerUsers');
+for (let btn of btnsVerUsuarios) {
+    btn.onclick = function () {
+        kappId = this.getAttributeNode('data-kapp-id').value;
+        document.getElementById('modal-kapp-pago-btn-guardar').getAttributeNode('data-kapp-id').value = kappId;
+        tablaDeUsuarios(kappId)
+    };
+}
 
 // BOTON EDITAR KAPP
 var btnsEditarKapp = document.getElementsByClassName('btnEditarKapp');
@@ -540,17 +610,17 @@ var btnsGuardarParametro = document.getElementsByClassName('btnGuardarParametro'
 for (let btn of btnsGuardarParametro) {
     btn.onclick = function () {
         parametroId = this.getAttributeNode('data-parametro-id').value;
-        element=document.getElementById('parametro-' + parametroId)
+        element = document.getElementById('parametro-' + parametroId)
         if (element.type == 'checkbox') {
             if (document.getElementById('parametro-' + parametroId).checked) {
-            new_parameter_value = '1'
+                new_parameter_value = '1'
             } else {
                 new_parameter_value = '0'
             }
         } else {
             new_parameter_value = element.value
         }
- 
+
         var pl = JSON.stringify({
             accion: '0',
             id_parametro: parametroId,
