@@ -97,7 +97,7 @@ def datos_kapp(id_kapp=None):
             LEFT JOIN kapps_db.kapps_modules_cat KMC ON KMC.id = KM.module_id """
     if id_kapp:
        sql+="where k.id={} ".format(id_kapp) 
-    sql+=" group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento"
+    sql+=" group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento order by state asc"
     cursor.execute(sql)
     kapps_info, columnas  = cursor.fetchall(), cursor.column_names
     cursor.close()
