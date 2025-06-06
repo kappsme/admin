@@ -143,15 +143,23 @@
 
 				<!-- CONDFIGURACION ESPECIFICA POR MODULO-->
 				<div class="col py-1">
-				<form action="{{ url_for('kappconf')}}" method="POST" id="home" name="home">
-					<button type="submit" class="btn btn-primary p-0 m-0"
-					style="width:1.8rem;height:1.8rem;">
-					<img font-color="white"
-					src="{{ url_for('static', filename='icons_svg/taller.svg') }}" alt="Configuracion"
-					style="width:1.7rem;height:1.3rem;" title="Configuracion">
+					<form action="{{ url_for('kappconf')}}" method="POST" id="home" name="home">
+						<button type="submit" class="btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;">
+							<img font-color="white" src="{{ url_for('static', filename='icons_svg/taller.svg') }}"
+								alt="Configuracion" style="width:1.7rem;height:1.3rem;" title="Configuracion">
+						</button>
+						<input type="hidden" id="kapp_id" name="kapp_id" value={{rmov['ID KAPP']}} />
+					</form>
+				</div>
+
+				<!-- USUARIOS-->
+				<div class="col py-1">
+					<button id="btn-kapp-users" name="btn-kapp-users" type="button"
+						class="btnVerUsers btn btn-primary p-0 m-0" style="width:1.8rem;height:1.8rem;"
+						data-kapp-id="{{rmov['ID KAPP']}}" data-bs-toggle="modal" data-bs-target="#UsersModal">
+						<img src="{{ url_for('static', filename='icons_svg/add-user.svg') }}" alt="Usuarios"
+							class="img inline p-0 m-0" style="width:1.7rem;height:1.3rem;" title="Usuarios">
 					</button>
-					<input type="hidden" id="kapp_id" name="kapp_id" value={{rmov['ID KAPP']}} />
-				</form>
 				</div>
 
 			</td>
@@ -336,6 +344,64 @@
 			<div class="modal-footer">
 				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
 				<button id="modal-crud-conf-confirmacion" class="btn btn-primary" data-kapp-id="">Guardar</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+
+<!-- MODAL PARA USUARIOS-->
+<div class="modal fade" id="UsersModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+	aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title text-primary" style="font-size:1.3rem" id="modal-kapp-usuarios-titulo">
+					Usuarios</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+
+				<table class="table table-bordered col-12" id="modal-kapp-usuarios-tabla" name="modal-kapp-usuarios-tabla">
+					<thead class="bg-primary">
+						<tr style="text-align: center;color: rgb(255, 255, 255);">
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">id
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Usuario
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">email
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Nivel
+							</th>
+							<th scope="col" class="p-1 mx-1">
+								<p style="font-size:1rem" class="p-0 m-0">Ultimo Request
+							</th>
+							<th scope="col" class="p-1 mx-1">
+							</th>
+						</tr>
+					</thead>
+					<tbody id="modal-kapp-usuarios-tabla-body" name="modal-kapp-usuarios-tabla-body">
+					</tbody>
+				</table>
+
+			</div>
+			<div class="modal-footer">
+				<div class="container">
+					<div class="row ">
+
+						<div class="col-12" style="text-align: right;">
+
+							<button id="modal-kapp-pago-cerrar" name="modal-kapp-pago-cerrar" type="button"
+								class="btn btn-secondary" data-bs-dismiss="modal"
+								style="display: inline-block;">Cerrar</button>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

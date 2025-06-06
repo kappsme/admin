@@ -305,7 +305,6 @@ def crud_kapp():
                 request.json["pagoId"]
             ),
         )
-        print("> " + request.json["pagoId"])
         result, reason, data = 'success', None, None
     elif accion == "5":  # Configuracion LOAD
         cursor.execute(
@@ -346,7 +345,6 @@ def crud_kapp():
                 (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s) """,
                 (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
                 )
-                #print("last ID: " + str(cursor.lastrowid))
                 # CREA USUARIO AMIND
                 #newKappId= 6 # str(cursor.lastrowid)
                 #datos_nuevo_usuario = {
@@ -354,7 +352,23 @@ def crud_kapp():
                 #    "nivel": 1,
                 #}
                 #klogin.kcrud_usuario(7,confJson["usuario_nombre"],confJson["usuario_apellido"],newKappId,datos_nuevo_usuario)
-                result, reason, data = 'success2', None, None
+                result, reason, data = 'success', None, None
+    elif accion == "8":  # DATOS USUARIOS
+        cursor.execute(
+            """SELECT id, username, email, nivel, estado, ifnull(al.ultimo_request,'') ultimo_request 
+                FROM kapps_db.accounts a 
+                    LEFT JOIN kapps_db.accounts_log al on al.id_account=a.id
+                where kapp_id =%s
+                order by estado desc""",
+            (
+                request.json["kapp_id"],
+            ),
+        )
+        response_usuarios = cursor.fetchall()
+        result, reason, data = 'success', None, {'usuarios':response_usuarios}
+    elif accion == "9":  # ANULAR SESION DE USUARIO
+        cursor.execute("""delete from kapps_db.accounts_log where id_account={0}""".format(request.json["usuarioId"]))
+        result, reason, data = 'success', None, None
     
     mysqlConn.commit()
     cursor.close()
@@ -372,7 +386,6 @@ def crud_campo():
     accion = request.json["accion"]
     if accion  == "0":  # ACTUALIZA CAMPO
         ids = request.json["info"].split("-")  # id 0 = ctz_id, 1 = ctz_base, 2 = id_module_screen, 3 = id_kapp
-        print("ids",ids)
         if ids[0] == "0" and ids[1] != "0": # ctz id
             # print("entro 1")
             sql = """insert into tx.ctz (id_kapp, id_module_screen, field_name, id_ctz_base, is_active) 
