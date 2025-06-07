@@ -32,6 +32,9 @@ fuera del container
 #acceder al contenedor
 docker exec -ti codigocontenedor /bin/bash
 
+docker exec -ti 8a9daa01987b7c876adf5dfeb319afc8729076b68b1e64b7f8cf82e577f16a05 /bin/bash
 
 #Correr el contenedor y entrar en el bash de una vez
+docker run --rm -it --entrypoint bash <image-name-or-id>
+
 docker run --rm -it --entrypoint bash <image-name-or-id>
