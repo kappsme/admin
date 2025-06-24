@@ -310,7 +310,7 @@ def crud_kapp():
         cursor.execute(
             """SELECT kmc.id id_modulo, name, isnull(kapp_id) estado, description FROM kapps_db.kapps_modules_cat kmc 
             left join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
-            where type='MAIN' and active=1
+            where type='MAIN' and active=1 and kmc.id <> 0
             order by kmc.id asc""",
             (
                 request.json["kapp_id"],
@@ -344,6 +344,11 @@ def crud_kapp():
                 """ insert into kapps_db.kapps (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values 
                 (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s) """,
                 (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
+                )
+                new_id = cursor.lastrowid
+                cursor.execute(
+                """ insert into kapps_db.kapps_modules (kapp_id, module_id) values (%s,%s)""",
+                (new_id,0)
                 )
                 # CREA USUARIO AMIND
                 #newKappId= 6 # str(cursor.lastrowid)
