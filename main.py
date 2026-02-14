@@ -148,7 +148,8 @@ def kappconf():
     cursor.execute("SET session time_zone = '-6:00'")
     
     cursor.execute(
-            """SELECT ROUND(@rownum:=@rownum+1,0) numreg, kmc.id id_modulo, name, isnull(kapp_id) estado, description FROM kapps_db.kapps_modules_cat kmc 
+            """SELECT ROUND(@rownum:=@rownum+1,0) numreg, kmc.id id_modulo, name, isnull(kapp_id) estado, description 
+            FROM kapps_db.kapps_modules_cat kmc 
             left join kapps_db.kapps_modules km on km.module_id=kmc.id and km.kapp_id=%s
             , (SELECT @rownum:=-1) r
             where type='MAIN' and active=1
