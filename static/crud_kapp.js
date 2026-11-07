@@ -357,46 +357,105 @@ document.getElementById('modal-crud-conf-confirmacion').onclick = function () {
     })
 };
 
-// BOTON CREAR KAPP
-document.getElementById('btn-modal-crear-kapp').onclick = function () {
-    var configuracionKapp = document.getElementsByClassName('crear-kapp');
-    var newconf = {}
-    var form_completed = true
-    const footerflag = document.getElementById("modal-kapp-crud-footer-flag");
-    footerflag.innerHTML = '';
+// BOTON CREAR KAPP: 1) crea la KAPP y su usuario administrador, 2) envía el correo con el acceso.
+// Cada fase se muestra en el indicador de progreso; si el correo falla, la KAPP ya existe y se puede reintentar.
+(function () {
+    var modalEl = document.getElementById('modalNuevaKapp');
+    var form = document.getElementById('nk-form'), progreso = document.getElementById('nk-progreso');
+    var resultado = document.getElementById('nk-resultado');
+    var btnCrear = document.getElementById('btn-modal-crear-kapp'), btnReintentar = document.getElementById('btn-nk-reintentar');
+    var btnCerrar = document.getElementById('modal-kapp-pago-cerrar'), btnX = modalEl.querySelector('.btn-close');
+    var flag = document.getElementById('modal-kapp-crud-footer-flag');
+    var procesando = false, creada = false, acceso = null;
 
+    // No se puede cerrar el diálogo mientras se procesa
+    modalEl.addEventListener('hide.bs.modal', function (e) { if (procesando) e.preventDefault(); });
+    modalEl.addEventListener('hidden.bs.modal', function () { acceso = null; if (creada) location.reload(); });
+    modalEl.querySelector('form').addEventListener('submit', function (e) { e.preventDefault(); if (!procesando && !creada) btnCrear.click(); });
 
-    for (let conf of configuracionKapp) {
-        newconf[conf.id] = conf.value
-        if (conf.value == '') {
-            form_completed = false
+    function bloquear(on) {
+        procesando = on;
+        [btnCrear, btnReintentar, btnCerrar, btnX].forEach(function (b) { b.disabled = on; });
+    }
+    function paso(nombre, estado) {
+        var li = progreso.querySelector('[data-paso="' + nombre + '"]');
+        li.className = estado;
+        li.querySelector('.nk-ico').innerHTML = estado === 'activo' ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>'
+            : estado === 'listo' ? '&#10003;' : estado === 'error' ? '!' : '';
+    }
+    function barra(on) { progreso.querySelector('.nk-bar').hidden = !on; }
+    function llamar(payload) {
+        return fetch($SCRIPT_ROOT + '/crud_kapp', {
+            method: 'POST', body: JSON.stringify(payload),
+            headers: { 'Content-type': 'application/json; charset=UTF-8' }
+        }).then(function (r) { return r.json(); });
+    }
+    function dato(etq, valor, copiable) {
+        var d = document.createElement('div'); d.className = 'nk-dato';
+        var l = document.createElement('span'); l.textContent = etq;
+        var v = document.createElement('code'); v.textContent = valor;
+        d.appendChild(l); d.appendChild(v);
+        if (copiable && navigator.clipboard) {
+            var c = document.createElement('button'); c.type = 'button'; c.className = 'btn btn-secondary btn-sm'; c.textContent = 'Copiar';
+            c.addEventListener('click', function () { navigator.clipboard.writeText(valor).then(function () { c.textContent = 'Copiado'; }); });
+            d.appendChild(c);
         }
+        return d;
     }
-    if (!form_completed) {
-        footerflag.innerHTML = 'Información de KAPP incompleta';
+    function terminar() { // deja solo "Cerrar" disponible
+        bloquear(false); btnCrear.hidden = true; btnReintentar.hidden = true;
     }
-    else {
 
-        var pl = JSON.stringify({ accion: '7', conf: JSON.stringify(newconf) });
-        let myPromise = new Promise((resolve, reject) => {
-            fetch($SCRIPT_ROOT + '/crud_kapp', {
-                method: "POST",
-                body: pl,
-                headers: {
-                    "Content-type": "application/json; charset=UTF-8"
+    function enviarCorreo() {
+        bloquear(true); barra(true); resultado.hidden = true; flag.textContent = '';
+        paso('correo', 'activo');
+        llamar({ accion: '10', kapp_id: acceso.kapp_id, username: acceso.username, password: acceso.password })
+            .catch(function () { return { result: 'error' }; })
+            .then(function (j) {
+                resultado.innerHTML = ''; resultado.hidden = false; barra(false);
+                if (j.result === 'success') {
+                    paso('correo', 'listo');
+                    resultado.className = 'nk-resultado nk-ok';
+                    resultado.textContent = 'Listo. Enviamos el acceso a ' + acceso.email + '.';
+                    terminar();
+                } else {
+                    paso('correo', 'error');
+                    resultado.className = 'nk-resultado nk-aviso';
+                    var p = document.createElement('p');
+                    p.textContent = 'La KAPP y el administrador ya están creados, pero no se pudo enviar el correo a ' + acceso.email +
+                        '. Reintente el envío o entregue estos datos manualmente (no se volverán a mostrar):';
+                    resultado.appendChild(p);
+                    resultado.appendChild(dato('Clave de la KAPP', acceso.clave, false));
+                    resultado.appendChild(dato('Usuario', acceso.username, true));
+                    resultado.appendChild(dato('Contraseña temporal', acceso.password, true));
+                    bloquear(false); btnCrear.hidden = true; btnReintentar.hidden = false;
                 }
-            }).then(response => response.json())
-                .then(json => {
-                    if (json.result == "success") {
-                        location.reload();
-                    }
-                    else {
-                        footerflag.innerHTML = json.reason;
-                    }
-                });
-        })
+            });
     }
-};
+
+    btnReintentar.addEventListener('click', function () { if (acceso) enviarCorreo(); });
+
+    btnCrear.onclick = function () {
+        var campos = document.getElementsByClassName('crear-kapp'), conf = {}, completo = true;
+        flag.textContent = '';
+        for (let c of campos) { conf[c.id] = c.value.trim(); if (c.value.trim() === '') completo = false; }
+        if (!completo) { flag.textContent = 'Información de KAPP incompleta'; return; }
+
+        bloquear(true); form.hidden = true; progreso.hidden = false; resultado.hidden = true; barra(true);
+        paso('crear', 'activo'); paso('correo', 'pendiente');
+        llamar({ accion: '7', conf: JSON.stringify(conf) })
+            .catch(function () { return { result: 'error', reason: 'Error de conexión. Revise la lista de KAPPs antes de reintentar.' }; })
+            .then(function (j) {
+                if (j.result !== 'success') {
+                    paso('crear', 'error'); progreso.hidden = true; form.hidden = false; bloquear(false);
+                    flag.textContent = j.reason || 'No se pudo crear la KAPP';
+                    return;
+                }
+                creada = true; acceso = j.data; paso('crear', 'listo');
+                enviarCorreo();
+            });
+    };
+})();
 
 // BOTON KAPP PARAMETROS
 var modalCrudKappParametros = new bootstrap.Modal(document.getElementById('modal-crud-parametros'));
@@ -581,7 +640,8 @@ for (let btn of btnsAgregarOpcion) {
 
 
 // BOTON AGREGAR OPCION A CAMPO
-document.getElementById('btn-add-opcion').onclick = function () {
+var btnAddOpcion = document.getElementById('btn-add-opcion'); // solo existe en la pantalla de detalle
+if (btnAddOpcion) btnAddOpcion.onclick = function () {
     var new_option = document.getElementById("modal-agregar-opcion").value;
     var id_campo = this.getAttributeNode('data-campo-id').value;
     if (new_option.length > 0 && id_campo.length > 0) {

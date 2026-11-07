@@ -1,0 +1,73 @@
+{% extends 'base_layout.html' %}
+
+{% block content %}
+<div id="parlevel-root" class="pl-page" data-kapp-id="{{ kapp.id }}">
+
+	<div class="pl-head">
+		<div>
+			<h1 class="pl-title">Mapeo de productos PARLEVEL</h1>
+			<p class="pl-sub">{{ kapp.name }} <span class="pl-clave">{{ kapp.clave }}</span></p>
+		</div>
+		<a class="btn btn-secondary" href="{{ url_for('home') }}">Volver</a>
+	</div>
+
+	{% if productos %}
+	<div class="pl-toolbar">
+		<input id="pl-buscar" type="search" class="form-control" placeholder="Buscar por ID, descripción o PARLEVEL"
+			aria-label="Buscar por ID, descripción o PARLEVEL">
+		<div class="form-check form-switch m-0">
+			<input class="form-check-input" type="checkbox" role="switch" id="pl-solo-sin-mapear">
+			<label class="form-check-label" for="pl-solo-sin-mapear">Solo sin mapear</label>
+		</div>
+		<span id="pl-contador" class="pl-contador" aria-live="polite"></span>
+	</div>
+
+	<div class="pl-asistente">
+		<label for="pl-sug-input" class="pl-asistente-titulo">¿A qué producto corresponde un nombre de PARLEVEL?</label>
+		<input id="pl-sug-input" type="text" class="form-control" maxlength="150" autocomplete="off"
+			placeholder="Nombre tal como aparece en PARLEVEL">
+		<ul id="pl-sug-lista" class="pl-sug-lista" aria-live="polite"></ul>
+	</div>
+
+	<div class="table-responsive">
+		<table class="table pl-table">
+			<thead class="bg-primary">
+				<tr>
+					<th scope="col" class="pl-col-id">ID</th>
+					<th scope="col">Producto</th>
+					<th scope="col" class="pl-col-props">Propiedades</th>
+					<th scope="col">Nombre en PARLEVEL</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for p in productos: %}
+				<tr data-producto-id="{{ p.id }}"
+					data-texto="{{ (p.id ~ ' ' ~ (p.nombre or '') ~ ' ' ~ (p.propiedades or '')) | lower }}">
+					<td class="pl-col-id" data-label="ID">{{ p.id }}</td>
+					<td class="pl-nombre">{{ p.nombre or '—' }}</td>
+					<td class="pl-col-props pl-props">{{ p.propiedades or '' }}</td>
+					<td>
+						<div class="pl-chips">
+							{% for m in mapeos.get(p.id, []): %}
+							<span class="pl-chip" data-map-id="{{ m.id }}"><span class="pl-chip-texto">{{ m.parlevel_nombre }}</span>
+								<button type="button" class="pl-del" aria-label="Quitar {{ m.parlevel_nombre }}">&times;</button></span>
+							{% endfor %}
+						</div>
+						<form class="pl-add" autocomplete="off">
+							<input type="text" class="form-control form-control-sm" maxlength="150"
+								placeholder="Agregar nombre en PARLEVEL" aria-label="Nombre en PARLEVEL para {{ p.nombre }}">
+							<button type="submit" class="btn btn-primary btn-sm">Agregar</button>
+						</form>
+					</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+	<div class="pager-bar"><span></span><div id="pl-pager"></div></div>
+	{% else: %}
+	<div class="alert alert-info">Esta KAPP no tiene productos en Inventario. Crea productos en la KAPP para poder mapearlos.</div>
+	{% endif %}
+</div>
+<script src="{{ url_for('static', filename='parlevel.js') }}"></script>
+{% endblock %}

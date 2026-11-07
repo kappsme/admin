@@ -6,193 +6,169 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='login_files/favicon.ico') }}">
     <title>KAPP: {{session['kapp']}}</title>
-    <script type=text/javascript>
+    <script nonce="{{ csp_nonce }}">
         $SCRIPT_ROOT = {{ request.script_root | tojson | safe }};
     </script>
 
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='reset.css') }}" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='inventario.css') }}" />
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='chosen.css') }}" />
-    <!--<script type=text/javascript src="{{ url_for('static', filename='js/masks.js') }}"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.js"
-        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-            <script type=text/javascript src="{{ url_for('static', filename='js/biblioteca.js') }}"></script>
-    <script type=text/javascript src="{{ url_for('static', filename='js/reportes.js') }}"></script>
-    <script type=text/javascript src="{{ url_for('static', filename='js/biblioteca2.js') }}"></script> -->
-
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bs5/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='modern.css') }}">
+    <script src="{{ url_for('static', filename='vendor/bs5/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='liquid.js') }}" defer></script>
 </head>
 
 <body>
 
-    <nav class="navbar navbar-expand-lg bg-primary p-0" data-bs-theme="dark">
-        <div class="container-fluid">
-            <p class="navbar-brand m-0" onclick="loadPage()">KAPPS.me
-                <small style="font-size:.7rem; color: white; "><br>{{session['clave']}} <em>{{ session['username']
-                        }}</em>
-                </small>
-            </p>
-            <script>
-            function loadPage() {
-                window.location = "{{ url_for('home') }}"
-            }
-            </script>
+    <nav class="navbar bg-primary p-0" data-bs-theme="dark">
+        <div class="container-fluid gap-2">
+            <a class="navbar-brand m-0" href="{{ url_for('home') }}">
+                <img src="{{ url_for('static', filename='login_files/logo-sm.webp') }}" alt="KAPPS.me" width="37" height="40" data-liquid="hover" data-liquid-scale="10">
+                <span><span class="brand-name">KAPPS.me</span>
+                <small>{{session['clave']}} <em>{{ session['username'] }}</em></small></span>
+            </a>
 
-            <div class="col-3">
-                <div class="container">
-                    <div class="row justify-content-center">
-                        <!-- NUEVA KAPP -->
-                        <form class="d-flex">
-                            <button id="btn-new-kapp" name="btn-new-kapp" type="button"
-                                class="btnVerPagos btn btn-primary p-0 m-0" style="width:3rem;height:3rem;"
-                                data-bs-toggle="modal" data-bs-target="#modalNuevaKapp">
-                                <img src="{{ url_for('static', filename='icons_svg/plus.svg') }}" alt="Nueva Kapp"
-                                    width="30" title="Nueva Kapp">
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <form class="d-flex" action="{{ url_for('logout') }}" id="out" name="out">
-                <button type="submit" class="btn btn-primary m-1 p-0 py-1" style="height:3rem ;width:3rem">
-                    <img src="{{ url_for('static', filename='icons_svg/exit.svg') }}" alt="Salir" width="30" height="30"
-                        title="Salir">
+            <div class="d-flex gap-2 ms-auto">
+                <!-- NUEVA KAPP -->
+                <button id="btn-new-kapp" name="btn-new-kapp" type="button" class="btn btn-primary p-0 nav-btn"
+                    data-bs-toggle="modal" data-bs-target="#modalNuevaKapp" title="Nueva KAPP">
+                    <img src="{{ url_for('static', filename='icons_svg/plus.svg') }}" alt="Nueva KAPP" width="24" height="24">
                 </button>
-            </form>
+                <form class="d-flex" action="{{ url_for('logout') }}" id="out" name="out">
+                    <button type="submit" class="btn btn-primary p-0 nav-btn" title="Salir">
+                        <img src="{{ url_for('static', filename='icons_svg/exit.svg') }}" alt="Salir" width="24" height="24">
+                    </button>
+                </form>
+            </div>
         </div>
-
-
-
     </nav>
 
 
     <!-- MODAL PARA AGREGAR KAPP -->
-    <div class="modal fade" id="modalNuevaKapp" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    <div class="modal fade" id="modalNuevaKapp" tabindex="-1" role="dialog" aria-labelledby="modal-kapp-pago-titulo"
         aria-hidden="true">
-        <div class="modal-dialog" role="document">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <form>
                     <div class="modal-header">
-                        <h5 class="modal-title text-primary" style="font-size:1.3rem" id="modal-kapp-pago-titulo">
-                            Crear KAPP</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="modal-kapp-pago-titulo">Crear KAPP</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-
-
-                        <div class="mb-3">
-                            <input type="text" id="clave" class="form-control crear-kapp"
-                                aria-describedby="claveHelpInline" placeholder="Clave" aria-label="Clave" required>
-                            <div id="claveHelpInline" class="form-text">Debe ser 4 caracteres y contener, al menos, una
-                                letra.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <input type="text" id="nombre" class="form-control crear-kapp"
-                                aria-describedby="nombreHelpInline" placeholder="Nombre KAPP" aria-label="Nombre" required>
-                            <div id="nombreHelpInline" class="form-text">Descripción Corta de la KAPP.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <input type="date" id="fechaCobro" class="form-control crear-kapp"
-                                aria-describedby="fechaCobroHelpInline" placeholder="Fecha Cobro"
-                                aria-label="Fecha Cobro" required>
-                            <div id="fechaCobroHelpInline" class="form-text">Fecha de Inicio de Cobro.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <input type="number" id="licencias" class="form-control crear-kapp"
-                                aria-describedby="licenciasHelpInline" placeholder="Licencias" aria-label="Licencias"
-                                required value="5">
-                            <div id="licenciasHelpInline" class="form-text">Cantidad Máxima permita de licencias</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <input type="number" id="diasVencimiento" class="form-control crear-kapp"
-                                aria-describedby="diasVencimientoHelpInline" placeholder="Días Vencimiento"
-                                aria-label="Días Vencimiento" required value="5">
-                            <div id="diasVencimientoHelpInline" class="form-text">Cantidad de días permitidos después de
-                                la fecha de pago</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <input type="text" id="propietario" class="form-control crear-kapp"
-                                aria-describedby="propietario" placeholder="Propietario" aria-label="Propietario"
-                                required>
-                            <div id="propietarioHelpInline" class="form-text">Nombre del Propietario de la KAPP</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <input type="email" id="email" class="form-control crear-kapp"
-                                aria-describedby="propietarioHelpInline" placeholder="email" aria-label="email"
-                                required>
-                            <div id="propietarioHelpInline" class="form-text">Email del propietario de la KAPP</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <input type="number" id="mensualidad" class="form-control crear-kapp"
-                                aria-describedby="mensualidadHelpInline" placeholder="Monto Mensual"
-                                aria-label="Monto Mensual" required>
-                            <div id="mensualidadHelpInline" class="form-text">Monto Mensual</div>
-                        </div>
-                        <hr class="bg-primary border-2 border-top border-primary" />
-                        <hr class="bg-primary border-2 border-top border-primary" />
-                        <hr class="bg-primary border-2 border-top border-primary" />
-
-                        <p class="form-text text-primary">Datos del usuario Admin</p>
-
-                        <div class="mb-3">
-                            <input type="text" id="usuario_nombre" class="form-control crear-kapp"
-                                aria-describedby="propietarioHelpInline" placeholder="Nombre" aria-label="Nombre"
-                                required>
-                            <div id="usuario_nombreHelpInline" class="form-text">Nombre</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <input type="text" id="usuario_apellido" class="form-control crear-kapp"
-                                aria-describedby="usuario_apellidoHelpInline" placeholder="Apellido"
-                                aria-label="Apellido" required>
-                            <div id="usuario_apellidoHelpInline" class="form-text">Apellido</div>
-                        </div>
-                        <div class="mb-3">
-                            <input type="email" id="usuario_email" class="form-control crear-kapp"
-                                aria-describedby="usuario_emailHelpInline" placeholder="email" aria-label="email"
-                                required>
-                            <div id="usuario_emailHelpInline" class="form-text">Email (Acá llegará la información para ingresar la KAPP)</div>
-                        </div>
-
-
-                    </div>
-
-
-                    <div class="modal-footer">
-                        <div class="container">
-                            <div class="row ">
-                                <div class="col-12" style="text-align: right;">
-                                    <text id="modal-kapp-crud-footer-flag" style="color: rgb(178, 1, 1);"></text>
-                                    <button id="modal-kapp-pago-cerrar" name="modal-kapp-pago-cerrar" type="button"
-                                        class="btn btn-secondary" data-bs-dismiss="modal"
-                                        style="display: inline-block;">Cerrar</button>
-                                    <button type="button" class="btn btn-primary"
-                                        id="btn-modal-crear-kapp">Crear</button>
+                        <div id="nk-form">
+                        <h6 class="modal-section">Datos de la KAPP</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" id="clave" class="form-control crear-kapp" placeholder="Clave" required >
+                                    <label for="clave">Clave</label>
                                 </div>
+                                <div class="form-text">4 caracteres, al menos una letra.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" id="nombre" class="form-control crear-kapp" placeholder="Nombre KAPP" required >
+                                    <label for="nombre">Nombre KAPP</label>
+                                </div>
+                                <div class="form-text">Descripción corta de la KAPP.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="date" id="fechaCobro" class="form-control crear-kapp" placeholder="Fecha de cobro" required >
+                                    <label for="fechaCobro">Fecha de cobro</label>
+                                </div>
+                                <div class="form-text">Inicio del cobro.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="number" id="licencias" class="form-control crear-kapp" placeholder="Licencias" required value="5">
+                                    <label for="licencias">Licencias</label>
+                                </div>
+                                <div class="form-text">Máximo de licencias permitidas.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="number" id="diasVencimiento" class="form-control crear-kapp" placeholder="Días de vencimiento" required value="5">
+                                    <label for="diasVencimiento">Días de vencimiento</label>
+                                </div>
+                                <div class="form-text">Días permitidos después de la fecha de pago.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" id="propietario" class="form-control crear-kapp" placeholder="Propietario" required >
+                                    <label for="propietario">Propietario</label>
+                                </div>
+                                <div class="form-text">Nombre del propietario.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="email" id="email" class="form-control crear-kapp" placeholder="Email del propietario" required >
+                                    <label for="email">Email del propietario</label>
+                                </div>
+                                <div class="form-text">Correo de contacto.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="number" id="mensualidad" class="form-control crear-kapp" placeholder="Monto mensual" required >
+                                    <label for="mensualidad">Monto mensual</label>
+                                </div>
+                                <div class="form-text">Cobro mensual de la KAPP.</div>
                             </div>
                         </div>
+
+                        <h6 class="modal-section mt-4">Usuario administrador</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" id="usuario_nombre" class="form-control crear-kapp" placeholder="Nombre" required >
+                                    <label for="usuario_nombre">Nombre</label>
+                                </div>
+                                <div class="form-text">Nombre del administrador.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" id="usuario_apellido" class="form-control crear-kapp" placeholder="Apellido" required >
+                                    <label for="usuario_apellido">Apellido</label>
+                                </div>
+                                <div class="form-text">Apellido del administrador.</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input type="email" id="usuario_email" class="form-control crear-kapp" placeholder="Email" required >
+                                    <label for="usuario_email">Email</label>
+                                </div>
+                                <div class="form-text">Aquí llegará la información para ingresar a la KAPP.</div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <!-- PROGRESO: se muestra mientras se crea la KAPP y se envía el correo -->
+                        <div id="nk-progreso" hidden role="status" aria-live="polite">
+                            <div class="progress nk-bar" aria-hidden="true">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div>
+                            </div>
+                            <ol class="nk-pasos">
+                                <li data-paso="crear" class="activo"><span class="nk-ico"></span>
+                                    <span class="nk-txt">Creando la KAPP y el usuario administrador</span></li>
+                                <li data-paso="correo" class="pendiente"><span class="nk-ico"></span>
+                                    <span class="nk-txt">Enviando por correo el acceso al administrador</span></li>
+                            </ol>
+                            <div id="nk-resultado" hidden></div>
+                        </div>
                     </div>
-
+                    <div class="modal-footer">
+                        <span id="modal-kapp-crud-footer-flag" class="text-danger me-auto small"></span>
+                        <button id="modal-kapp-pago-cerrar" name="modal-kapp-pago-cerrar" type="button"
+                            class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="btn btn-primary" id="btn-nk-reintentar" hidden>Reintentar envío</button>
+                        <button type="button" class="btn btn-primary" id="btn-modal-crear-kapp">Crear</button>
+                    </div>
                 </form>
-
             </div>
         </div>
     </div>
-
 
 
     <div class="container-fluid border">

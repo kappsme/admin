@@ -1,39 +1,12 @@
-# ESTO SOLO PARA MAC
-# import pymysql
-# pymysql.install_as_MySQLdb()
-#######
-from flask import (
-    Flask,
-    render_template,
-    render_template_string,
-    request,
-    redirect,
-    url_for,
-    session,
-    jsonify,
-    make_response,
-    Response,
-    send_from_directory,
-    request,
-)
-#from flask_mysqldb import MySQL
-from datetime import datetime
-from flask_mail import Mail, Message
-import re
+from flask import Flask, render_template, request, session, g
 import os
-#import MySQLdb
-#import xlwt
-#import io
-#import urllib.parse
+import secrets
+from urllib.parse import urlsplit
 import klogin
-#import datos_base
-#import base64
-#from collections import Counter
-#import math
+import nuevo_admin
 from dotenv import load_dotenv
 import mysql.connector
 import json
-#import requests
 
 # ENV Variables
 load_dotenv()
@@ -44,6 +17,15 @@ kapps_admin.config["PDF_FOLDER"] = "templates/pdfs/"
 kapps_admin.config["JSON_SORT_KEYS"] = False
 
 kapps_admin.config["application_id"] ='0'
+
+# SEGURIDAD: cookie de sesión
+kapps_admin.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # En producción (HTTPS) definir SESSION_COOKIE_SECURE=1 en .env
+    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "0") == "1",
+    MAX_CONTENT_LENGTH=2 * 1024 * 1024,
+)
 
 # CONEXION A BASE DE DATOS
 def DBConn():
@@ -59,17 +41,6 @@ def DBConn():
 
 # Change this to your secret key (can be anything, it's for extra protection)
 kapps_admin.secret_key = os.getenv('APP_SECRET_KEY')
-
-# CONFIGURACION CORREO ELECTRONICO
-kapps_admin.config["MAIL_SERVER"] = os.getenv('MAIL_SERVER')
-kapps_admin.config["MAIL_PORT"] = os.getenv('MAIL_PORT')
-kapps_admin.config["MAIL_USERNAME"] = os.getenv('MAIL_USERNAME')
-kapps_admin.config["MAIL_PASSWORD"] = os.getenv('MAIL_PASSWORD')
-remitente = os.getenv('MAIL_SENDER')
-
-kapps_admin.config["MAIL_USE_TLS"] = False
-kapps_admin.config["MAIL_USE_SSL"] = False
-mail = Mail(kapps_admin)
 
 # LOGINS
 
@@ -95,10 +66,12 @@ def datos_kapp(id_kapp=None):
             left join kapps_db.accounts ka on ka.kapp_id=k.id and ka.estado=1
             LEFT JOIN kapps_db.kapps_modules KM ON KM.kapp_id = k.id
             LEFT JOIN kapps_db.kapps_modules_cat KMC ON KMC.id = KM.module_id """
+    params = []
     if id_kapp:
-       sql+="where k.id={} ".format(id_kapp) 
+       sql+="where k.id=%s "
+       params.append(id_kapp)
     sql+=" group by k.id, k.clave, k.name, k.fecha_cobro, state, licencias, dias_vencimiento order by state asc"
-    cursor.execute(sql)
+    cursor.execute(sql, params)
     kapps_info, columnas  = cursor.fetchall(), cursor.column_names
     cursor.close()
     return kapps_info, columnas
@@ -112,10 +85,17 @@ def home():
         kapps_info, columnas = datos_kapp() 
         kapps_morosas = len(['x' for kapp in kapps_info if kapp['DIAS ATRASO']>=0])
 
-        cursor.execute(
-            """select * from kapps_db.kapp_conf_cat """,
-        )
-        kapps_cat_info = cursor.fetchall()
+
+        # ESTADÍSTICAS (listón de la lista de KAPPs)
+        cursor.execute("select count(*) n from kapps_db.accounts where estado=1 and kapp_id<>0")
+        usuarios_activos = cursor.fetchone()["n"]
+        stats = {
+            "total": len(kapps_info),
+            "activas": sum(1 for k in kapps_info if k["ESTADO"] == "ACTIVE"),
+            "suspendidas": sum(1 for k in kapps_info if k["ESTADO"] == "BLOCKED"),
+            "vencidas": sum(1 for k in kapps_info if k["ESTADO"] != "INACTIVE" and k["DIAS ATRASO"] >= 1),
+            "usuarios": usuarios_activos,
+        }
 
         # KAPP INFO
         cursor.execute(
@@ -133,6 +113,7 @@ def home():
             , kapps_info=kapps_info
             , kapps_morosas=kapps_morosas
             , columnas = columnas
+            , stats = stats
         )
     else:
         return klogin.klogout(msg="Sesión Caducada!")
@@ -222,7 +203,7 @@ def kappconf():
         )
     kapps_modules_fields = cursor.fetchall()
     kapps_modules_screens = []
-    [kapps_modules_screens.append({"module_name":parametro['module_name'], "screen_name":parametro['screen_name'],"id_module_screen":parametro['id_module_screen']}) for parametro in kapps_modules_fields if {"module_name":parametro['module_name'], "screen_name":parametro['screen_name'], "screen_name":parametro['screen_name'], "id_module_screen":parametro['id_module_screen']} not in kapps_modules_screens]
+    [kapps_modules_screens.append({"module_name":parametro['module_name'], "screen_name":parametro['screen_name'],"id_module_screen":parametro['id_module_screen']}) for parametro in kapps_modules_fields if {"module_name":parametro['module_name'], "screen_name":parametro['screen_name'], "id_module_screen":parametro['id_module_screen']} not in kapps_modules_screens]
     
     cursor.execute("""select id, html_type from ctz_ft where state=1""")
     html_types = cursor.fetchall()
@@ -327,38 +308,58 @@ def crud_kapp():
             if confJson[confcat]:
                 cursor.execute("insert into kapps_db.kapps_modules (kapp_id, module_id) values (%s,%s)",
                 (request.json["kappId"], confcat))
-    elif accion == "7":  # Agregar KAPP
-        confJson = json.loads(request.json["conf"])
-        
-        if len(confJson["clave"])!=4 or not confJson["clave"].isalnum():
-            result, reason, data = 'error', 'Formato de clave inválido', None 
+    elif accion == "7":  # Agregar KAPP + usuario administrador (el correo se envía aparte: accion 10)
+        datos_alta, error = nuevo_admin.validar_alta(json.loads(request.json["conf"]))
+        if error:
+            result, reason, data = 'error', error, None
         else:
-            cursor.execute(
-            "select clave from kapps_db.kapps where clave= '{}'".format(confJson["clave"])
-            )
-            clave = cursor.fetchone()
-            
-            if clave:
-                result, reason, data = 'error', 'Código de Clave ya existe', {'clave' : clave}
+            cursor.execute("select 1 from kapps_db.kapps where clave=%s", [datos_alta["clave"]])
+            if cursor.fetchone():
+                result, reason, data = 'error', 'Código de Clave ya existe', None
             else:
-                cursor.execute(
-                """ insert into kapps_db.kapps (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento) values 
-                (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s) """,
-                (confJson["nombre"],confJson["propietario"],confJson["clave"].upper() ,confJson["licencias"],confJson["fechaCobro"],confJson["mensualidad"],confJson["email"],confJson["diasVencimiento"])
-                )
-                new_id = cursor.lastrowid
-                cursor.execute(
-                """ insert into kapps_db.kapps_modules (kapp_id, module_id) values (%s,%s)""",
-                (new_id,0)
-                )
-                # CREA USUARIO AMIND
-                #newKappId= 6 # str(cursor.lastrowid)
-                #datos_nuevo_usuario = {
-                #    "correo": confJson["usuario_email"],
-                #    "nivel": 1,
-                #}
-                #klogin.kcrud_usuario(7,confJson["usuario_nombre"],confJson["usuario_apellido"],newKappId,datos_nuevo_usuario)
-                result, reason, data = 'success', None, None
+                try:
+                    cursor.execute(
+                        """insert into kapps_db.kapps (name, owner, created_date, state, clave, licencias, fecha_cobro, mensualidad, correo_factura, dias_vencimiento)
+                           values (%s,%s,sysdate(),'ACTIVE',%s,%s,%s,%s,%s,%s)""",
+                        (datos_alta["nombre"], datos_alta["propietario"], datos_alta["clave"], datos_alta["licencias"],
+                         datos_alta["fechaCobro"], datos_alta["mensualidad"], datos_alta["email"], datos_alta["diasVencimiento"]))
+                    new_id = cursor.lastrowid
+                    cursor.execute("insert into kapps_db.kapps_modules (kapp_id, module_id) values (%s,%s)", (new_id, 0))
+                    username = nuevo_admin.generar_username(cursor, datos_alta["usuario_nombre"], datos_alta["usuario_apellido"])
+                    password = nuevo_admin.generar_password()
+                    # misma cifrado que usa TX para los usuarios de cada KAPP; password_reset=1 obliga a cambiarla al ingresar
+                    cursor.execute(
+                        """insert into kapps_db.accounts (username, email, name, lastname, kapp_id, nivel, estado, bloqueo, vigencia, password_reset, password2)
+                           values (%s,%s,%s,%s,%s,1,1,0,1200,1,aes_encrypt(%s,UNHEX(SHA2(%s,512))))""",
+                        (username, datos_alta["usuario_email"], datos_alta["usuario_nombre"].lower(), datos_alta["usuario_apellido"].lower(),
+                         new_id, password, os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN')))
+                    result, reason = 'success', None
+                    data = {'kapp_id': new_id, 'clave': datos_alta["clave"], 'username': username, 'password': password,
+                            'email': datos_alta["usuario_email"]}
+                except mysql.connector.Error:
+                    mysqlConn.rollback()  # no queda a medias: ni KAPP ni usuario
+                    kapps_admin.logger.exception("Error creando KAPP")
+                    result, reason, data = 'error', 'No se pudo crear la KAPP. Intente de nuevo.', None
+    elif accion == "10":  # ENVIAR CORREO CON ACCESO AL ADMINISTRADOR DE LA KAPP NUEVA
+        # El destinatario sale de la base (no del navegador) y solo se envía si usuario y contraseña temporal coinciden.
+        cursor.execute(
+            """select a.name, a.email, k.name kapp_nombre, k.clave
+               from kapps_db.accounts a join kapps_db.kapps k on k.id=a.kapp_id
+               where a.kapp_id=%s and a.username=%s and a.password_reset=1
+                 and aes_decrypt(a.password2,UNHEX(SHA2(%s,512)))=%s""",
+            (request.json.get("kapp_id"), request.json.get("username"), os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN'),
+             request.json.get("password")))
+        admin = cursor.fetchone()
+        if not admin:
+            result, reason, data = 'error', 'No se encontró el usuario administrador de la KAPP', None
+        else:
+            try:
+                nuevo_admin.enviar_correo_acceso(admin["email"], admin["name"].title(), admin["kapp_nombre"], admin["clave"],
+                                                 request.json["username"], request.json["password"])
+                result, reason, data = 'success', None, {'email': admin["email"]}
+            except Exception:
+                kapps_admin.logger.exception("Error enviando correo de acceso")
+                result, reason, data = 'error', 'No se pudo enviar el correo', {'email': admin["email"]}
     elif accion == "8":  # DATOS USUARIOS
         cursor.execute(
             """SELECT id, username, email, nivel, estado, ifnull(al.ultimo_request,'') ultimo_request 
@@ -373,7 +374,7 @@ def crud_kapp():
         response_usuarios = cursor.fetchall()
         result, reason, data = 'success', None, {'usuarios':response_usuarios}
     elif accion == "9":  # ANULAR SESION DE USUARIO
-        cursor.execute("""delete from kapps_db.accounts_log where id_account={0}""".format(request.json["usuarioId"]))
+        cursor.execute("delete from kapps_db.accounts_log where id_account=%s", [request.json["usuarioId"]])
         result, reason, data = 'success', None, None
     
     mysqlConn.commit()
@@ -392,22 +393,21 @@ def crud_campo():
     accion = request.json["accion"]
     if accion  == "0":  # ACTUALIZA CAMPO
         ids = request.json["info"].split("-")  # id 0 = ctz_id, 1 = ctz_base, 2 = id_module_screen, 3 = id_kapp
-        if ids[0] == "0" and ids[1] != "0": # ctz id
-            # print("entro 1")
-            sql = """insert into tx.ctz (id_kapp, id_module_screen, field_name, id_ctz_base, is_active) 
-                values({0}, {1}, '{2}', {3}, {4})""".format(ids[3],ids[2], request.json["field_name"],ids[1],request.json["is_active"])
+        nombre, activo = request.json["field_name"], request.json["is_active"]
+        sql = None
+        if ids[0] == "0" and ids[1] != "0":
+            sql = ("insert into tx.ctz (id_kapp, id_module_screen, field_name, id_ctz_base, is_active) values (%s,%s,%s,%s,%s)",
+                   (ids[3], ids[2], nombre, ids[1], activo))
         if ids[0] != "0":
-            # print("entro 2")
-            sql = "update tx.ctz set field_name='{0}', is_active={1} where id={2}".format(request.json["field_name"],request.json["is_active"],ids[0])
-        if ids[0] == "0" and ids[1] == "0": # New Field
-            # print("entro 3")
-            sql = """insert into tx.ctz (id_kapp, id_module_screen, field_name, is_active, id_field_type) 
-                values({0}, {1}, '{2}', {3}, {4})""".format(ids[3],ids[2], request.json["field_name"],request.json["is_active"], request.json["selected_html_type"])  
-        cursor.execute(sql)
+            sql = ("update tx.ctz set field_name=%s, is_active=%s where id=%s", (nombre, activo, ids[0]))
+        if ids[0] == "0" and ids[1] == "0":  # campo nuevo
+            sql = ("insert into tx.ctz (id_kapp, id_module_screen, field_name, is_active, id_field_type) values (%s,%s,%s,%s,%s)",
+                   (ids[3], ids[2], nombre, activo, request.json["selected_html_type"]))
+        cursor.execute(*sql)
         result, reason = 'success', None
     elif accion == "1":  # LOAD OPCION A CAMPO 
         id_campo = request.json["id_campo"]
-        cursor.execute("select * from tx.ctz_fto where id_ctz= '{}'".format(id_campo))
+        cursor.execute("select * from tx.ctz_fto where id_ctz=%s", [id_campo])
         opciones = cursor.fetchall()
         result, reason, data = 'success', None, opciones
     elif accion == "2":  # ADD OPCION A CAMPO 
@@ -436,6 +436,7 @@ def crud_campo():
 @kapps_admin.route("/crud_parametro", methods=["POST","GET"])
 def crud_parameter():
     result, reason, data = 'failed','No Action Specified', None
+    success = False
     mysql = DBConn()
     cursor = mysql.cursor(dictionary=True)
     cursor.execute('SET lc_time_names = "es_ES"')
@@ -446,13 +447,13 @@ def crud_parameter():
         id_kapp = ids[0]
         id_parametro = ids[1]
         new_parameter_value = request.json["new_parameter_value"]
-        cursor.execute("""select 1 from kapps_db.tx_params where kapp_id={0} and tx_params_cat_id={1}""".format(id_kapp, id_parametro))
-        is_parametro = cursor.fetchone()
-        if is_parametro:
-            sql = """update kapps_db.tx_params set valor='{0}' where kapp_id={1} and tx_params_cat_id={2}""".format(new_parameter_value, id_kapp, id_parametro)
+        cursor.execute("select 1 from kapps_db.tx_params where kapp_id=%s and tx_params_cat_id=%s", (id_kapp, id_parametro))
+        if cursor.fetchone():
+            cursor.execute("update kapps_db.tx_params set valor=%s where kapp_id=%s and tx_params_cat_id=%s",
+                           (new_parameter_value, id_kapp, id_parametro))
         else:
-            sql  = """insert into kapps_db.tx_params (kapp_id, tx_params_cat_id, valor) VALUES ({0},{1},'{2}')""".format(id_kapp, id_parametro, new_parameter_value)
-        cursor.execute(sql)
+            cursor.execute("insert into kapps_db.tx_params (kapp_id, tx_params_cat_id, valor) values (%s,%s,%s)",
+                           (id_kapp, id_parametro, new_parameter_value))
         success, reason, data = True, 'Parametero Actualizado', None
     mysql.commit()
     cursor.close()
@@ -460,331 +461,48 @@ def crud_parameter():
 
 
 
-@kapps_admin.route("/nueva", methods=["POST"])
-def nueva():
-    # if 'loggedin' in session and request.method == 'POST':
-    mysqlConn = DBConn()
-    cursor = mysqlConn.cursor(dictionary=True)
-    cursor.execute('SET lc_time_names = "es_ES"')
-    cursor.execute("""select a.id, a.name, a.alt, a.html_initial_render_state, a.par1, a.par2, a.par3 ,at.tag, at.html_type 
-        from kapps_db.tx_atts a left join kapps_db.tx_atts_types at on at.id=a.id_type
-        where id_kapp=%s and a.state=1 order by a.rank asc;""",kapps_admin.config["KAPP_ID"])
-    atts = cursor.fetchall()
-    cursor.execute("SELECT nombre FROM marcas where estado=1")
-    marcas = cursor.fetchall()
-    cursor.execute("SELECT nombre FROM tipos_equipo where estado=1")
-    tipos_equipo = cursor.fetchall()
-    cursor.execute("SELECT nombre FROM zonas")
-    zonas = cursor.fetchall()
-    cursor.close()
-    return render_template(
-        "nueva.html", atts=atts, marcas=marcas, tipos_equipo=tipos_equipo, zonas=zonas
-    )
-
-
-
-
-@kapps_admin.route("/pdfs_mail", methods=["POST"])
-def pdfs_mail():
-    tipo_accion = int(request.form["tipo_accion"])
-    id_boleta = int(request.form["id_boleta"])
-    id_cliente = int(request.form["id_cliente"])
-    pdf = MyFPDF()
-    pdf.add_page()
-    pdf.set_font("arial", size=10)
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SET lc_time_names = "es_ES"')
-    cursor.execute("SELECT correo from tx_clientes where id = %s", [id_cliente])
-    datos = cursor.fetchone()
-    cursor.close()
-    if datos is None:
-        return "NO-CORREO"
-    else:
-        destinatario = str(datos["correo"])
-    if tipo_accion == 1:  # ENVIAR MOVIMIENTO PDF POR CORREO
-        id_movimiento = int(request.form["id_movimiento"])
-        mov = datos_base.datos_movimiento_unico(mysql, id_movimiento)
-        html_source = render_template(
-            "pdfs/movimiento.html", id_boleta=id_boleta, mov=mov
-        )
-        pdf.write_html(html_source)
-        archivo = (
-            kapps_admin.root_path
-            + "\\templates\\pdf_repository\\recibo_"
-            + str(id_movimiento)
-            + ".pdf"
-        )
-        pdf.output(archivo, "F")
-        mysql.connection.commit()
-        envio_correo(1, destinatario, archivo, str(id_movimiento))
-        return "Enviado"
-    if tipo_accion == 2:  # ENVIAR BOLETA PDF POR CORREO
-        pdf = boleta_pdf(id_boleta)
-        archivo = (
-            kapps_admin.root_path
-            + "\\templates\\pdf_repository\\boleta_"
-            + str(id_boleta)
-            + ".pdf"
-        )
-        pdf.output(archivo, "F")
-        mysql.connection.commit()
-        envio_correo(2, destinatario, archivo, str(id_boleta))
-        return "Enviado"
-    if tipo_accion == 3:  # ENVIAR COTIZACION PDF POR CORREO
-        cotizacion = cotizacion_pdf(id_boleta)
-        pdf = cotizacion[0]
-        archivo = (
-            kapps_admin.root_path
-            + "\\templates\\pdf_repository\\cotizacion_"
-            + str(cotizacion[1])
-            + ".pdf"
-        )
-        pdf.output(archivo, "F")
-        envio_correo(3, destinatario, archivo, str(cotizacion[1]))
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute(
-            'select concat("Por ¢",FORMAT(monto,"Currency")) monto from boletas_cotizaciones where id_boleta=%s and estado=1',
-            [id_boleta],
-        )
-        datos = cursor.fetchone()
-        monto = datos["monto"]
-        cursor.execute(
-            "select username from kapps_db.accounts where id=%s", str(session["id"])
-        )
-        datos = cursor.fetchone()
-        username = datos["username"]
-        dato_nuevo = (
-            datetime.now().strftime("%Y-%m-%d %I:%M%p")
-            + " "
-            + destinatario
-            + " ("
-            + username
-            + ");"
-        )
-        sql = (
-            'UPDATE boletas_cotizaciones set correo_envio = concat(ifnull(correo_envio,""),"'
-            + dato_nuevo
-            + '") where id_boleta='
-            + str(id_boleta)
-            + " and estado=1"
-        )
-        cursor.execute(sql)
-        cursor.execute(
-            "insert into boletas_comentarios (id_boleta, comentario, id_usuario, tipo) values (%s,%s,%s,3)",
-            [id_boleta, monto + " Enviada a " + destinatario, session["id"]],
-        )
-        mysql.connection.commit()
-        cursor.close()
-        return "Enviado"
-    if tipo_accion == 4:  # ENVIAR COMPROBANTE PDF POR CORREO
-        comprobante = comprobante_pdf(id_boleta)
-        pdf = comprobante[0]
-        archivo = (
-            kapps_admin.root_path
-            + "\\templates\\pdf_repository\\comprobante_"
-            + str(comprobante[1])
-            + ".pdf"
-        )
-        pdf.output(archivo, "F")
-        envio_correo(4, destinatario, archivo, str(comprobante[1]))
-        return "Enviado"
-    if tipo_accion == 5:  # ENVIAR COMPROBANTE DE VENTA PDF POR CORREO
-        id_venta = id_boleta
-        comprobante = comprobante_venta_pdf(id_venta)
-        pdf = comprobante
-        archivo = (
-            kapps_admin.root_path
-            + "\\templates\\pdf_repository\\comprobante_venta_"
-            + str(id_venta)
-            + ".pdf"
-        )
-        pdf.output(archivo, "F")
-        envio_correo(7, destinatario, archivo, id_venta)
-        return "Enviado"
-
-
-# CREA PDF BOLETA
-
-
-def boleta_pdf(id_boleta):
-    pdf = MyFPDF(unit="mm", format=(73, 275))
-    pdf.add_page()
-    pdf.set_font("arial", size=10)
-    boleta = datos_base.datos_boleta_impresion(mysql, id_boleta)
-    fecha_split = boleta["fecha"].split(" ")
-    fecha = fecha_split[0]
-    hora = fecha_split[1]
-    # CREACION DEL PDF
-    pdf.set_margins(6, 1, 4)
-    pdf.set_x(1)
-    pdf.set_y(3)
-    pdf.set_font_size(13)
-    pdf.multi_cell(w=0, h=4, txt=session["kapp"], align="C")
-    pdf.set_font_size(11)
-    pdf.multi_cell(w=0, h=4, txt=session["Representante"] +' CED:' + session["Representante_Id"], align="C")
-    pdf.set_font_size(9)
-    pdf.multi_cell(w=0, h=4, txt=session["Contacto"], align="C")
-    pdf.line(1, pdf.get_y(), 71, pdf.get_y())
-    pdf.set_font_size(12)
-    pdf.multi_cell(w=0, h=5, txt="Boleta N° " + str(id_boleta), align="C")
-    if boleta["boleta_tipo"] == 1 and boleta["boleta_original"] != 0:
-        pdf.multi_cell(w=0, h=5, txt="GARANTIA", align="C")
-    pdf.set_font_size(10)
-    pdf.multi_cell(w=0, h=5, txt="Fecha: " + fecha, align="C")
-    pdf.line(1, pdf.get_y(), 71, pdf.get_y())
-    pdf.set_x(1)
-    pdf.set_font_size(9)
-    pdf.multi_cell(
-        w=0, h=5, txt=boleta["nombres"] + " " + boleta["apellidos"], align="C"
-    )
-    pdf.multi_cell(w=0, h=5, txt="Cliente: " + str(boleta["id_cliente"]), align="C")
-    pdf.line(1, pdf.get_y(), 71, pdf.get_y())
-    pdf.multi_cell(w=0, h=5, txt="EQUIPO: " + boleta["tipo_equipo"], align="L")
-    pdf.multi_cell(w=0, h=4, txt="MARCA: " + boleta["marca"], align="L")
-    pdf.multi_cell(w=0, h=4, txt="MODELO: " + boleta["modelo"], align="L")
-    pdf.multi_cell(w=0, h=4, txt="SERIE: " + boleta["serie"], align="L")
-    pdf.multi_cell(w=0, h=4, txt="CONDICION: " + boleta["condicion"], align="L")
-    pdf.line(1, pdf.get_y(), 71, pdf.get_y())
-    pdf.multi_cell(w=0, h=4, txt="MOTIVO: " + boleta["motivo_cliente"], align="L")
-    pdf.multi_cell(w=0, h=4, txt="COMENTARIO: " + boleta["comentario"], align="L")
-    pdf.multi_cell(
-        w=0,
-        h=4,
-        txt="Dias hábiles estimados para entrega de Cotización: "
-        + str(boleta["dias_habiles"]),
-        align="L",
-    )
-    pdf.line(1, pdf.get_y(), 71, pdf.get_y())
-    # EXTRACCION DEL TEXTO PARA CONTRATO EN BOLETA
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute("SELECT contenido from datos where id = 1")
-    datos = cursor.fetchone()
-    cursor.close()
-    contrato = datos["contenido"]
-    contrato = contrato.replace("Ddia", fecha)
-    contrato = contrato.replace("Hhora", hora)
-    contrato = contrato.replace(
-        "Ccliente", boleta["nombres"] + " " + boleta["apellidos"], 1
-    )
-    pdf.set_font_size(9)
-    pdf.multi_cell(w=0, h=4, txt=contrato, align="J")
-    pdf.multi_cell(w=0, h=4, txt="", align="C")
-    pdf.line(11, pdf.get_y() + 6, 61, pdf.get_y() + 6)
-    pdf.ln(h=7)
-    pdf.multi_cell(w=0, h=4, txt="Firma Cliente", align="C")
-    pdf.ln(h=1)
-    pdf.multi_cell(w=0, h=4, txt="Emitida por: " + boleta["username"], align="L")
-    return pdf
-
-
-
-# ENVIO CORREO
-def envio_correo(tipo_mensaje, destinatario, adjunto=0, extra=0):
-    if tipo_mensaje == 1:  # ENVIO DE RECIBO
-        mensaje = Message(
-            "Recibo Electrónica Torres", sender=remitente, recipients=[destinatario]
-        )
-        mensaje.body = "Buen día. Adjunto encontrará el recibo solicitado por su pago en Electrónica Torres"
-        with kapps_admin.open_resource(adjunto) as fp:
-            mensaje.attach("Recibo_" + extra + ".pdf", "application/pdf", fp.read())
-        mail.send(mensaje)
-    if tipo_mensaje == 2:  # ENVIO DE BOLETA
-        mensaje = Message(
-            "Boleta Electrónica Torres", sender=remitente, recipients=[destinatario]
-        )
-        mensaje.body = "Buen día. Adjunto encontrará la Boleta generada en su visita a Electrónica Torres"
-        with kapps_admin.open_resource(adjunto) as fp:
-            mensaje.attach("Boleta_" + extra + ".pdf", "application/pdf", fp.read())
-        mail.send(mensaje)
-    if tipo_mensaje == 3:  # ENVIO DE COTIZACION
-        mensaje = Message(
-            "Cotización de Electrónica Torres",
-            sender=remitente,
-            recipients=[destinatario],
-        )
-        mensaje.body = "Buen día.\nAdjunto encontrará la Cotización para la Reparación de su equipo en Electrónica Torres"
-        with kapps_admin.open_resource(adjunto) as fp:
-            mensaje.attach("cotizacion_" + extra + ".pdf", "application/pdf", fp.read())
-        mail.send(mensaje)
-    if tipo_mensaje == 4:  # ENVIO DE COMPROBANTE
-        mensaje = Message(
-            "Comprobante de Electrónica Torres",
-            sender=remitente,
-            recipients=[destinatario],
-        )
-        mensaje.body = "Buen día.\nAdjunto encontrará el comprobante de Pago para la Reparación de su equipo en Electrónica Torres"
-        with kapps_admin.open_resource(adjunto) as fp:
-            mensaje.attach("comprobante" + extra + ".pdf", "application/pdf", fp.read())
-        mail.send(mensaje)
-    if tipo_mensaje == 5:  # ENVIO DE NOTIFICACION DE RECHAZO
-        mensaje = Message(
-            "Notificación de Electrónica Torres",
-            sender=remitente,
-            recipients=[destinatario],
-        )
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute(
-            "select contenido from datos where id=10",
-        )
-        resultado = cursor.fetchone()
-        cursor.close()
-        mensaje.body = urllib.parse.unquote(resultado["contenido"])
-        mail.send(mensaje)
-    if tipo_mensaje == 6:  # INTERNO: ENVIO DE CODIGOS PARA RESTABLECER CONTRASEÑA
-        mensaje = Message(
-            "Restablecer Contraseña de KAPPS.me",
-            sender=remitente,
-            recipients=[destinatario],
-        )
-        if extra["boton"] == 1:
-            bgc = "#426A96"
-        if extra["boton"] == 2:
-            bgc = "#3AB020"
-        if extra["boton"] == 3:
-            bgc = "#CD7102"
-        # mensaje.body =  urllib.parse.unquote(resultado["contenido"]+"recuperar_password/")
-        mensaje.html = (
-            "<h3>Para configurar una nueva contraseña, ponga esta información en la pantalla donde se le solicitan.<br><br><h2>Código: "
-            + extra["clave"]
-            + "<br>Presiona el Botón: <code style='color:white;background-color:"
-            + bgc
-            + ";'>&nbsp;"
-            + str(extra["boton"])
-            + "&nbsp;</code>&nbsp;</h2><br><br><small class='text-muted' style='font-size:0.9rem'>Datos válidos por 60 minutos</small>"
-        )
-        mail.send(mensaje)
-        return "enviado"
-    if tipo_mensaje == 7:  # ENVIO DE COMPROBANTE VENTA
-        mensaje = Message(
-            "Comprobante de Venta de Electrónica Torres",
-            sender=remitente,
-            recipients=[destinatario],
-        )
-        mensaje.body = "Buen día.\nAdjunto encontrará el comprobante de Pago por su compra en Electrónica Torres"
-        with kapps_admin.open_resource(adjunto) as fp:
-            mensaje.attach(
-                "comprobante" + str(extra) + ".pdf", "application/pdf", fp.read()
-            )
-        mail.send(mensaje)
-    if tipo_mensaje == 8:  # INTERNO: ENVIO DE CONTRASEÑA A USUARIO NUEVO
-        mensaje = Message(
-            "Contraseña para KAPPS.me",
-            sender=remitente,
-            recipients=[destinatario],
-        )
-        mensaje.html = (
-            "<h3>Buen día " + extra[0] + "<br><br>Esta es la contraseña para ingresar a Kapps.me. El usuario se lo entregará su administrador.<br><br><br>" \
-                "<h2>"+extra[1]+"</h2>")
-        mail.send(mensaje)
-        return "enviado"
-    return "OK"
-
-
-
-
 @kapps_admin.route("/logout")
 def logout():
     return klogin.klogout(msg="")
+
+
+# SEGURIDAD: rechaza POST originados en otro sitio (CSRF)
+@kapps_admin.before_request
+def check_origin():
+    if request.method == "POST":
+        origin = request.headers.get("Origin")
+        if origin and urlsplit(origin).netloc != request.host:
+            return "Origen no permitido", 403
+
+
+@kapps_admin.before_request
+def csp_nonce():
+    g.csp_nonce = secrets.token_urlsafe(16)
+
+
+@kapps_admin.context_processor
+def inject_csp_nonce():
+    return {"csp_nonce": getattr(g, "csp_nonce", "")}
+
+
+@kapps_admin.after_request
+def security_headers(resp):
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "same-origin")
+    resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    if request.endpoint != "static":
+        resp.headers["Cache-Control"] = "no-store"
+        # Scripts inline solo con nonce; estilos inline permitidos (atributos style en las plantillas)
+        resp.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            f"script-src 'self' 'nonce-{getattr(g, 'csp_nonce', '')}'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data:; connect-src 'self'; object-src 'none'; "
+            "base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        )
+    return resp
 
 
 # CADA VEZ QUE SE LLAME A ALGUNA DEF
@@ -868,261 +586,137 @@ def before_request_func():
         # print(request.path)
         #print(request.endpoint)
         #print(request.form)
-        if "username" not in request.form:
-            if (
-                request.endpoint != "logout"
-                and request.endpoint != "login"
-                and request.endpoint != "static"
-                and request.endpoint != "recuperar_password"
-                and request.method != "GET"
-            ):
-                return render_template(
-                    "no_dato.html", mensaje="Sesión Caducada. Vuela a iniciar Sesión."
-                )
-            elif (
-                str(request.routing_exception)
-                == "405 Method Not Allowed: The method is not allowed for the requested URL."
-            ):
-                return render_template("login.html", msg="")
-            elif request.endpoint == "imagenes":
-                return "No access"
-            elif request.endpoint == "static":
-                None
-            else:
-                print("sin token 2b")
-                kapps_admin.config["application_id"]="-"
-                url_code = request.path.lstrip("/").upper()
-                kapp_id = klogin.checkDomain(url_code)
-                kapp_id = kapp_id if kapp_id else "-"
-                #if kapp_id:
-                #    app_tx.config["application_id"]=str(kapp_id)  
-                #    print ("111kapp_id: " + str(kapp_id) + " / app_tx: "+ app_tx.config["application_id"] +" KappCOde: " +kapp_code )
-                #print ("kapp_id: " + str(kapp_id) + " / app_tx: " + app_tx.config["application_id"]+" KappCOde: " +kapp_code)
-                return klogin.klogin(kapps_admin.config["application_id"], url_code=url_code  , kapp_id=kapp_id)
-                #return render_template("login.html", msg="", kapp_id=kapp_id, url_code=url_code)
+        # Solo el login es público para POST; cualquier otro POST requiere sesión
+        if request.method == "POST" and request.endpoint == "login":
+            return None
+        if (
+            request.endpoint != "logout"
+            and request.endpoint != "login"
+            and request.endpoint != "static"
+            and request.method != "GET"
+        ):
+            return render_template(
+                "no_dato.html", mensaje="Sesión Caducada. Vuela a iniciar Sesión."
+            )
+        elif (
+            str(request.routing_exception)
+            == "405 Method Not Allowed: The method is not allowed for the requested URL."
+        ):
+            return render_template("login.html", msg="")
+        elif request.endpoint == "static":
+            return None
         else:
-            print('Going to validate Login!')
-                
+            kapps_admin.config["application_id"]="-"
+            url_code = request.path.lstrip("/").upper()
+            kapp_id = klogin.checkDomain(url_code)
+            kapp_id = kapp_id if kapp_id else "-"
+            return klogin.klogin(kapps_admin.config["application_id"], url_code=url_code, kapp_id=kapp_id)
 
 
-@kapps_admin.route("/crud_usuario", methods=["POST"])
-def crud_usuario():
-    accion = int(request.form.get("accion"))
-    parametro = request.form.get("parametro")
-    parametro2 = request.form.get("parametro2")
-    if (
-        accion == 4 or accion == 6
-    ):  # ACCION QUE NECESITA EL PARAMETRO 3 = NUMERO DE BOTON, O VERIFICAR CONTRASEÑA NUEVA
-        parametro3 = request.form.get("parametro3")
-        resultado = klogin.kcrud_usuario(
-            mysql=mysql,
-            accion=accion,
-            parametro=parametro,
-            parametro2=parametro2,
-            aplication_id=aplication_id,
-            parametro3=parametro3,
-        )
-    else:
-        resultado = klogin.kcrud_usuario(
-            accion=accion,
-            parametro=parametro,
-            parametro2=parametro2,
-            aplication_id=aplication_id,
-        )
-    if (
-        accion == 2 and resultado != "0"
-    ):  # Envia correo con datos para restaurar la clave
-        envio_correo(6, resultado["correo"], extra=resultado)
-        return "OK"
-    if accion == 5 and resultado != "0":  # Redirije a la pagina para recuperar
-        return render_template(
-            "login_recovery.html", clave=parametro, clave_link=parametro2
-        )
-    # if accion == 6 and resultado == "OK":  # Redirije a la pagina de inicio
-    # return render_template(
-    #    "login.html",
-    # )
-    return resultado
+# MAPEO DE PRODUCTOS PARLEVEL <-> KAPPS
+# Los productos son tx.elementos con id_module_cat = 3 (INVENTARIO); sus datos están en
+# tx.elementos_datos según tx.ctz (pantalla 1 = PRODUCTO). El nombre es ctz.id_ctz_base = 1.
+PARLEVEL_MODULO_INVENTARIO, PARLEVEL_PANTALLA_PRODUCTO, PARLEVEL_CAMPO_NOMBRE = 3, 1, 1
+
+def _parlevel_productos(cursor, kapp_id):
+    cursor.execute(
+        """SELECT e.id,
+                  MAX(IF(ctz.id_ctz_base=%s, ed.valor, NULL)) nombre,
+                  GROUP_CONCAT(IF(ctz.id_ctz_base=%s, NULL,
+                                  CONCAT(ctz.field_name, ': ', IF(ctz.id_field_type=6, fto.value, ed.valor)))
+                               ORDER BY IFNULL(ctz.id_ctz_base,15000), ctz.id SEPARATOR ' | ') propiedades
+           FROM tx.elementos e
+                JOIN tx.elementos_datos ed ON ed.id_elemento=e.id
+                JOIN tx.ctz ON ctz.id=ed.id_ctz AND ctz.id_kapp=e.id_kapp
+                            AND ctz.id_module_screen=%s AND ctz.is_active=1
+                LEFT JOIN tx.ctz_fto fto ON ctz.id_field_type=6 AND fto.id=ed.valor
+           WHERE e.id_kapp=%s AND e.id_module_cat=%s
+           GROUP BY e.id
+           ORDER BY nombre""",
+        [PARLEVEL_CAMPO_NOMBRE, PARLEVEL_CAMPO_NOMBRE, PARLEVEL_PANTALLA_PRODUCTO, kapp_id, PARLEVEL_MODULO_INVENTARIO],
+    )
+    return cursor.fetchall()
 
 
-@kapps_admin.route("/usuarios", methods=["POST"])
-def usuarios():
+@kapps_admin.route("/parlevel", methods=["POST"])
+def parlevel():
+    try:
+        kapp_id = int(request.form.get("kapp_id", ""))
+    except ValueError:
+        return render_template("no_dato.html", mensaje="KAPP no válida"), 400
     mysqlConn = DBConn()
     cursor = mysqlConn.cursor(dictionary=True)
-    cursor.execute('SET lc_time_names = "es_ES"')
-    # VERIFICAR SI ES ADMINISTRADOR (NIVEL 1)
-    cursor.execute("select nivel from kapps_db.accounts where id=%s", [session["id"]])
-    resultado = cursor.fetchone()
-    formulario = request.form
-    if resultado["nivel"] == 1:
-        if formulario["accion"] == "1":  # PAGINA INICIAL
-            # VERIFICA DATOS DE LA APP
-            cursor.execute(
-                "select name, clave, licencias, owner responsable from kapps_db.kapps where id=%s",
-                [aplication_id],
-            )
-            datos_aplicacion = cursor.fetchone()
-            # CANTIDAD DE USUARIOS ACTIVOS EN LA APLICACION
-            cursor.execute(
-                "select count(1) usuarios_activos  \
-                from kapps_db.accounts where id<>3 and estado=1",
-                [],
-            )
-            datos = cursor.fetchone()
-            usuarios_activos = datos["usuarios_activos"]
-            # INFORMACION DE USUARIOS DE LA APLICACION
-            cursor.execute(
-                """select k.name empresa, a.id, a.name, lastname, username, email, ifnull(phone1,"") telefono, nivel, estado, bloqueo, vigencia 
-                        from kapps_db.accounts a left join kapps_db.kapps k on k.id=a.kapp_id 
-                    where a.id<>3 order by kapp_id asc, estado desc,nivel asc, a.id""")
-            datos_usuarios = cursor.fetchall()
-            cursor.close()
+    cursor.execute("select id, name, clave from kapps_db.kapps where id=%s", [kapp_id])
+    kapp = cursor.fetchone()
+    if not kapp:
+        cursor.close(); mysqlConn.close()
+        return render_template("no_dato.html", mensaje="KAPP no encontrada"), 404
+    productos = _parlevel_productos(cursor, kapp_id)
+    cursor.execute(
+        "select id, producto_id, parlevel_nombre from tx.parlevel_productos_map where kapp_id=%s and estado=1 order by parlevel_nombre",
+        [kapp_id],
+    )
+    mapeos = {}
+    for m in cursor.fetchall():
+        mapeos.setdefault(m["producto_id"], []).append(m)
+    cursor.close(); mysqlConn.close()
+    return render_template("parlevel.html", kapp=kapp, productos=productos, mapeos=mapeos)
 
-            # prueba=os.listdir(kapps_admin.config["APPLICATION_ROOT"])
-            # prueba=kapps_admin.root_path
-            prueba = ""
-            return render_template(
-                "usuarios.html",
-                datos_aplicacion=datos_aplicacion,
-                datos_usuarios=datos_usuarios,
-                usuarios_activos=usuarios_activos,
-                prueba=prueba,
+
+@kapps_admin.route("/crud_parlevel", methods=["POST"])
+def crud_parlevel():
+    datos = request.get_json(silent=True) or {}
+    try:
+        kapp_id = int(datos.get("kapp_id"))
+        accion = datos.get("accion")
+        mysqlConn = DBConn()
+    except (TypeError, ValueError):
+        return {"result": "error", "reason": "Datos inválidos"}, 400
+    cursor = mysqlConn.cursor(dictionary=True)
+    try:
+        if accion == "add":
+            producto_id = int(datos.get("producto_id"))
+            nombre = str(datos.get("nombre", "")).strip()
+            if not 1 <= len(nombre) <= 150:
+                return {"result": "error", "reason": "El nombre debe tener entre 1 y 150 caracteres"}
+            # el producto debe ser de esta KAPP y ser un producto (no un lote)
+            cursor.execute(
+                """select 1 from tx.elementos e
+                   where e.id=%s and e.id_kapp=%s and e.id_module_cat=%s
+                     and exists (select 1 from tx.elementos_datos ed join tx.ctz on ctz.id=ed.id_ctz
+                                 where ed.id_elemento=e.id and ctz.id_module_screen=%s)""",
+                [producto_id, kapp_id, PARLEVEL_MODULO_INVENTARIO, PARLEVEL_PANTALLA_PRODUCTO],
             )
-        if formulario["accion"] == "2":  # CONSULTA USUARIO
-            # CONSULTA SI HAY LICENCIAS DISPONIBLES
-            return str(datos_base.kapp_usuarios_disponibles(mysql, aplication_id))
-        if formulario["accion"] == "3":  # CREAR USUARIO
-            usuarios_disponibles = klogin.kapp_usuarios_disponibles(
-                    aplication_id
-            )
-            if usuarios_disponibles > 0:
-                datos_nuevo_usuario = {
-                    "correo": formulario["correo"],
-                    "nivel": formulario["nivel"],
-                }
-                return klogin.kcrud_usuario(
-                    mysql,
-                    7,
-                    formulario["nombres"],
-                    formulario["apellidos"],
-                    aplication_id,
-                    datos_nuevo_usuario,
+            if not cursor.fetchone():
+                return {"result": "error", "reason": "El producto no pertenece a esta KAPP"}
+            try:
+                cursor.execute(
+                    "insert into tx.parlevel_productos_map (kapp_id, producto_id, parlevel_nombre, id_usuario) values (%s,%s,%s,%s)",
+                    [kapp_id, producto_id, nombre, session.get("id")],
                 )
-            else:
-                return "NO-DISPONIBILIDAD"
-        if formulario["accion"] == "4":  # ACTIVAR USUARIO
-            usuarios_disponibles = klogin.kapp_usuarios_disponibles(
-               aplication_id
-            )
-            if usuarios_disponibles > 0:
-                cursor.execute("update kapps_db.accounts set estado = 1 where id=%s", [formulario["id_usuario"]])
-                mysqlConn.commit()
-                cursor.close()
-                return "OK"
-            else:
-                return "NO-DISPONIBILIDAD"
-    else:
-        return resultado
-
-
-# INVENTARIO IMAGENES (desuso)
-@kapps_admin.route("/imagenes/<codigo>/<imagen>", methods=["GET"])
-def imagenes(codigo, imagen):
-    with open(
-        os.path.join(
-            kapps_admin.root_path, "inv_imagenes", codigo + "_" + imagen + ".jpg"
-        ),
-        "rb",
-    ) as f:
-        image_binary = f.read()
-        response = make_response(base64.b64encode(image_binary))
-        response.headers.set("Content-Type", "image/jpg")
-        response.headers.set("Content-Disposition", "attachment", filename="image.jpg")
-    return response
-
-
-# INVENTARIO IMAGENES (desuso)
-@kapps_admin.route("/imagenes_inventario2", methods=["POST"])
-def imagenes_inventario2():
-    formulario = request.form
-    if formulario["tipo"] == "1":  # inventario
-        archivo = formulario["codigo_producto"] + "_" + formulario["n_imagen"] + ".jpg"
-        html_image = (
-            "<img src='{{ url_for('static', filename='inv_imagenes/"
-            + archivo
-            + "') }}'>"
-        )
-        return render_template_string(html_image)
-
-
-# TIENDA
-@kapps_admin.route("/imagenes_inventario", methods=["POST"])
-def imagenes_inventario():
-    formulario = request.form
-    if formulario["tipo"] == "1":  # inventario mostrar
-        archivo = (
-            formulario["codigo_producto"]
-            + "_"
-            + formulario["n_imagen"]
-            + "."
-            + formulario["extension"]
-        )
-        html_image = (
-            "<img src='{{ url_for('static', filename='inv_imagenes/"
-            + archivo
-            + "') }}'>"
-        )
-        # html_image = "<div class='image-zoomer'><div class='image_inv' style=' background-image: url('{{ url_for('static', filename='/inv_imagenes/" + archivo + "') }}'></div></div>"
-        return render_template_string(html_image)
-    if formulario["tipo"] == "2":  # inventario guardar
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        codigo_producto = formulario["codigo_producto"]
-        n_imagen = formulario["n_imagen"]
-        archivos = request.files
-        if "imagen" in archivos:
-            archivos["imagen"].save(
-                os.path.join(
-                    FOLDER_INV_IMAGENES,
-                    codigo_producto
-                    + "_"
-                    + n_imagen
-                    + archivos["imagen"].filename[
-                        archivos["imagen"].filename.rfind(".") :
-                    ],
-                )
-            )
-            cursor.execute(
-                "update inv_productos set img%s = %s where id = %s",
-                (
-                    int(n_imagen),
-                    archivos["imagen"].filename[
-                        archivos["imagen"].filename.rfind(".") + 1 :
-                    ],
-                    codigo_producto,
-                ),
-            )
-            mysql.connection.commit()
-            cursor.close()
-        return "OK"
-    if formulario["tipo"] == "3":  # ELIMINAR IMAGENES DE UN PRODUCTO YA CREADO
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        codigo_producto = formulario["codigo_producto"]
-        n_imagen = formulario["n_imagen"]
-        cursor.execute(
-            "update inv_productos set img%s = 0 where id = %s",
-            (int(n_imagen), codigo_producto),
-        )
-        mysql.connection.commit()
+            except mysql.connector.errors.IntegrityError:
+                return {"result": "error", "reason": "Ese nombre de PARLEVEL ya está asignado a un producto de esta KAPP"}
+            new_id = cursor.lastrowid
+            mysqlConn.commit()
+            return {"result": "success", "data": {"id": new_id, "producto_id": producto_id, "parlevel_nombre": nombre}}
+        if accion == "delete":
+            cursor.execute("delete from tx.parlevel_productos_map where id=%s and kapp_id=%s", [int(datos.get("id")), kapp_id])
+            mysqlConn.commit()
+            return {"result": "success"}
+        return {"result": "error", "reason": "Acción no válida"}, 400
+    except (TypeError, ValueError):
+        return {"result": "error", "reason": "Datos inválidos"}, 400
+    finally:
         cursor.close()
-        return "OK"
+        mysqlConn.close()
 
 
 # ERRORES
 @kapps_admin.errorhandler(404)
 def page_not_found(e):
     # note that we set the 404 status explicitly
-    return klogin.klogout(mysql, msg="")
+    return render_template("no_dato.html", mensaje="Página no encontrada"), 404
 
 
 if __name__ == "__main__":
-    kapps_admin.run(host="0.0.0.0", port=os.getenv('SERVER_PORT'), debug=True)
+    kapps_admin.run(host="0.0.0.0", port=os.getenv('SERVER_PORT'), debug=os.getenv("FLASK_DEBUG") == "1")

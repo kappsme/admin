@@ -1,0 +1,208 @@
+/* Login moderno: escena 3D + tarjeta con tilt. Mantiene las clases que usa main.js (input100, has-val, alert-validate, btn-show-pass). */
+:root {
+  --ink: #1b2340;
+  --navy: #0e1737;
+  --blue: #3b6cff;
+  --ice: #1b2340;
+  --muted: #6b7694;
+  --line: #dde3f1;
+  --amber: #ffb347;
+  --danger: #c2410c;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(60rem 40rem at 15% 20%, rgba(59, 108, 255, .16), transparent 60%),
+    radial-gradient(45rem 35rem at 90% 95%, rgba(255, 179, 71, .18), transparent 60%),
+    #f4f6fc;
+  color: var(--ice);
+  overflow-x: hidden;
+}
+
+.stage {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem clamp(1.25rem, 5vw, 5rem);
+  perspective: 1400px;
+}
+
+/* ---------- Escena: logo flotante ---------- */
+.scene {
+  position: relative;
+  height: min(70vh, 34rem);
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+  transform: rotateX(calc(var(--ry, 0) * -1deg)) rotateY(calc(var(--rx, 0) * 1deg));
+  transition: transform .25s ease-out;
+}
+
+.hero-logo {
+  width: min(32rem, 100%);
+  aspect-ratio: 1;
+  animation: flota 9s ease-in-out infinite;
+}
+.hero-logo img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 1.5rem 1.2rem rgba(27, 35, 64, .25)); }
+
+@keyframes flota {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-1.2rem) rotate(1.5deg); }
+}
+
+/* ---------- Tarjeta de login ---------- */
+.card-wrap { perspective: 1000px; justify-self: center; width: min(26rem, 100%); }
+
+.wrap-login100 {
+  position: relative;
+  padding: 2.6rem 2.2rem 2rem;
+  border-radius: 1.6rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .92), rgba(255, 255, 255, .72));
+  border: 1px solid rgba(255, 255, 255, .9);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 2rem 4rem rgba(27, 35, 64, .15), 0 0 0 1px rgba(27, 35, 64, .05);
+  transform-style: preserve-3d;
+  transform: rotateX(calc(var(--ty, 0) * 1deg)) rotateY(calc(var(--tx, 0) * 1deg));
+  transition: transform .12s ease-out;
+  overflow: hidden;
+}
+
+/* Brillo que sigue al cursor */
+.wrap-login100::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(18rem circle at var(--gx, 50%) var(--gy, 0%), rgba(59, 108, 255, .1), transparent 60%);
+  pointer-events: none;
+}
+
+.brand { display: flex; align-items: center; gap: .7rem; transform: translateZ(40px); }
+.brand b { font-size: 1.9rem; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
+.brand span {
+  font-size: .75rem; font-weight: 700; color: var(--ink); background: var(--amber);
+  padding: .15rem .5rem; border-radius: .4rem;
+}
+.subtitle { margin: .5rem 0 1.8rem; color: var(--muted); font-size: .95rem; transform: translateZ(30px); }
+
+.wrap-input100 {
+  position: relative;
+  margin-bottom: 1.1rem;
+  transform: translateZ(25px);
+}
+
+.input100 {
+  width: 100%;
+  height: 3.4rem;
+  padding: 1.35rem 2.8rem .4rem 1rem;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: .9rem;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.input100:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(59, 108, 255, .25);
+}
+
+/* Etiqueta flotante (usa data-placeholder de main.js original) */
+.focus-input100 {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.focus-input100::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  left: 1rem;
+  top: 1.05rem;
+  font-size: 1rem;
+  color: var(--muted);
+  transition: all .18s ease;
+}
+.input100:focus + .focus-input100::before,
+.input100.has-val + .focus-input100::before {
+  top: .45rem;
+  font-size: .7rem;
+  color: var(--blue);
+}
+
+.btn-show-pass {
+  position: absolute;
+  right: .4rem;
+  top: 0;
+  height: 3.4rem;
+  width: 2.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: pointer;
+  z-index: 2;
+}
+.btn-show-pass:hover { color: var(--ink); }
+.btn-show-pass [hidden] { display: none; }
+
+/* Validación (main.js agrega .alert-validate al contenedor) */
+.alert-validate .input100 { border-color: var(--danger); }
+.alert-validate::after {
+  content: attr(data-validate);
+  display: block;
+  margin: .3rem .2rem 0;
+  font-size: .78rem;
+  color: var(--danger);
+}
+
+.msg-error {
+  margin: .2rem 0 .4rem;
+  padding: .6rem .8rem;
+  border-radius: .7rem;
+  background: #fff1dc;
+  border: 1px solid #f3c27a;
+  color: #9a3f00;
+  font-size: .88rem;
+}
+
+.login100-form-btn {
+  width: 100%;
+  height: 3.3rem;
+  margin-top: .6rem;
+  border: 0;
+  border-radius: .9rem;
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: .01em;
+  color: var(--ink);
+  background: linear-gradient(135deg, #ffd08a, var(--amber));
+  box-shadow: 0 .8rem 1.6rem rgba(255, 179, 71, .3);
+  cursor: pointer;
+  transform: translateZ(35px);
+  transition: transform .15s, box-shadow .15s, filter .15s;
+}
+.login100-form-btn:hover { filter: brightness(1.06); box-shadow: 0 1rem 2rem rgba(255, 179, 71, .42); }
+.login100-form-btn:active { transform: translateZ(35px) translateY(1px); }
+
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+@media (max-width: 880px) {
+  .stage { grid-template-columns: 1fr; align-content: start; justify-items: center; gap: .5rem; padding: 2.25rem 1.25rem 2rem; }
+  .scene { height: auto; width: 100%; transform: none; }
+  .hero-logo { width: min(15rem, 62vw); }
+  .card-wrap { width: min(26rem, 100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-logo { animation: none; }
+  .scene, .wrap-login100 { transition: none; transform: none; }
+}

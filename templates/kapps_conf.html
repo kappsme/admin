@@ -1,5 +1,4 @@
 {% block content %}
-<!-- <script type=text/javascript src="{{ url_for('static', filename='chosen.jquery.min.js') }}"></script> -->
 
 
 <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -78,12 +77,9 @@
 													<select name="html_type-{{campo.id}}-{{campo.id_ctz_base}}"
 														id="html_type-{{campo.id}}-{{campo.id_ctz_base}}" disabled>
 														{% for html_type in html_types: %}
-														<option value={{html_type.id}}>{{html_type.html_type}}</option>
+														<option value={{html_type.id}} {% if html_type.id == campo.html_type_id %}selected{% endif %}>{{html_type.html_type}}</option>
 														{% endfor %}
 													</select>
-													<script>
-														document.getElementById('html_type-{{campo.id}}-{{campo.id_ctz_base}}').selectedIndex = {{ campo.html_type_id - 1 }}
-													</script>
 												</td>
 												<td>
 													<input type="checkbox"
@@ -138,7 +134,7 @@
 											alt="Agregar Campo" class="img inline p-0 m-0"
 											style="width:1.9rem;height:1.5rem;" title="Agregar Campo">
 									</button>
-									<script type=text/javascript>
+									<script nonce="{{ csp_nonce }}">
 													btn = document.getElementById('btn-add-campo-{{screen.id_module_screen}}-{{kapps_info[0]["ID KAPP"]}}')
 													var randomNumber = Math.floor(Math.random() * (12000 - 5000 + 1)) + 5000;
 													btn.addEventListener('click', (event) => {
@@ -252,23 +248,22 @@
 										</div>
 
 										<div class="col-6">
+										{% set pid = parametro.kapp_id ~ '-' ~ parametro.catalog_id %}
 										{% if parametro.html_type == 'textarea': %}
-										<textarea id="parametro-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
-											data-parametro-id="{{parametro.kapp_id}}-{{parametro.catalog_id}}"
-												class="confparam confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}" {{
-												parametro.html_additional }}>{{parametro.valor}}</textarea>
-											{% else: %}
-											<input id="parametro-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
-												type="{{parametro.html_type}}" 
-												class="form-control confparam confparam-{{parametro.kapp_id}}-{{parametro.catalog_id}}"
-												data-parametro-id="{{parametro.kapp_id}}-{{parametro.catalog_id}}"
-												{{ parametro.html_additional }}
-												{% if parametro.html_type == 'CHECKBOX': %}
-													{% if parametro.valor == '1': %}checked{% endif %}/> 
-												{% else:%}
-													value="{{parametro.valor}}"/>
-												{% endif %}
-											{% endif %}
+										<textarea id="parametro-{{pid}}" data-parametro-id="{{pid}}"
+											class="form-control confparam confparam-{{pid}}" {{ parametro.html_additional or '' }}>{{parametro.valor}}</textarea>
+										{% elif parametro.html_type|lower == 'checkbox': %}
+										<div class="form-check form-switch m-0">
+											<input id="parametro-{{pid}}" type="checkbox" role="switch"
+												class="form-check-input confparam confparam-{{pid}}"
+												data-parametro-id="{{pid}}" {% if parametro.valor == '1': %}checked{% endif %}>
+										</div>
+										{% else: %}
+										<input id="parametro-{{pid}}" type="{{parametro.html_type}}"
+											class="form-control confparam confparam-{{pid}}"
+											data-parametro-id="{{pid}}" {{ parametro.html_additional or '' }}
+											value="{{parametro.valor}}">
+										{% endif %}
 										</div>
 										<div class="col-1">
 											<!--GUARDAR PARAMETRO -->
