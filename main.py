@@ -169,11 +169,11 @@ def kappconf():
                         , 1 is_customizable
                         , ctz.is_active
                         , ifnull(ctz_base.id,Null) id_ctz_base
-                        from tx.ctz left join tx.ctz_base 
+                        from ctz left join ctz_base 
                                         on ctz.id_ctz_base=ctz_base.id
-                                    left join tx.ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
-                                    left join tx.ctz_ft on ctz.id_field_type = ctz_ft.id 
-                                    left join tx.ctz_ft ctz_ft2 on ctz_base.id_field_type = ctz_ft2.id
+                                    left join ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
+                                    left join ctz_ft on ctz.id_field_type = ctz_ft.id 
+                                    left join ctz_ft ctz_ft2 on ctz_base.id_field_type = ctz_ft2.id
                                     left join kapps_db.kapps_modules km on km.kapp_id = id_kapp and km.module_id = ctz_module_screens.id_module_cat
                                     left join kapps_db.kapps_modules_cat kmc on  km.module_id=kmc.id
                         where ctz.id_kapp=%s
@@ -188,9 +188,9 @@ def kappconf():
                         , is_customizable
                         , ctz.is_active
                         , ctz.id id_ctz_base 
-                        from tx.ctz_base ctz
-                                    left join tx.ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
-                                    left join tx.ctz_ft on ctz.id_field_type = ctz_ft.id
+                        from ctz_base ctz
+                                    left join ctz_module_screens on ctz.id_module_screen=ctz_module_screens.id
+                                    left join ctz_ft on ctz.id_field_type = ctz_ft.id
                                     left join kapps_db.kapps_modules km on km.kapp_id=%s and km.module_id = ctz_module_screens.id_module_cat
                                     left join kapps_db.kapps_modules_cat kmc on  km.module_id=kmc.id
                         where ctz.id not in (select id_ctz_base from ctz where id_kapp=%s and id_ctz_base is not null)
@@ -396,25 +396,25 @@ def crud_campo():
         nombre, activo = request.json["field_name"], request.json["is_active"]
         sql = None
         if ids[0] == "0" and ids[1] != "0":
-            sql = ("insert into tx.ctz (id_kapp, id_module_screen, field_name, id_ctz_base, is_active) values (%s,%s,%s,%s,%s)",
+            sql = ("insert into ctz (id_kapp, id_module_screen, field_name, id_ctz_base, is_active) values (%s,%s,%s,%s,%s)",
                    (ids[3], ids[2], nombre, ids[1], activo))
         if ids[0] != "0":
-            sql = ("update tx.ctz set field_name=%s, is_active=%s where id=%s", (nombre, activo, ids[0]))
+            sql = ("update ctz set field_name=%s, is_active=%s where id=%s", (nombre, activo, ids[0]))
         if ids[0] == "0" and ids[1] == "0":  # campo nuevo
-            sql = ("insert into tx.ctz (id_kapp, id_module_screen, field_name, is_active, id_field_type) values (%s,%s,%s,%s,%s)",
+            sql = ("insert into ctz (id_kapp, id_module_screen, field_name, is_active, id_field_type) values (%s,%s,%s,%s,%s)",
                    (ids[3], ids[2], nombre, activo, request.json["selected_html_type"]))
         cursor.execute(*sql)
         result, reason = 'success', None
     elif accion == "1":  # LOAD OPCION A CAMPO 
         id_campo = request.json["id_campo"]
-        cursor.execute("select * from tx.ctz_fto where id_ctz=%s", [id_campo])
+        cursor.execute("select * from ctz_fto where id_ctz=%s", [id_campo])
         opciones = cursor.fetchall()
         result, reason, data = 'success', None, opciones
     elif accion == "2":  # ADD OPCION A CAMPO 
         id_campo = request.json["id_campo"]
         new_option = request.json["new_option"]
         cursor.execute(
-            "insert into tx.ctz_fto (id_ctz, value, is_active) values (%s,%s,%s)",
+            "insert into ctz_fto (id_ctz, value, is_active) values (%s,%s,%s)",
             [id_campo, new_option, 1],
         )
         result, reason, data = 'success', None, None
@@ -423,7 +423,7 @@ def crud_campo():
         option_new_value = request.json["option_new_value"]
         is_active = request.json["is_active"]
         cursor.execute(
-            "update tx.ctz_fto set value=%s, is_active=%s where id=%s",
+            "update ctz_fto set value=%s, is_active=%s where id=%s",
             [option_new_value, is_active, id_campo],
         )
         result, reason, data = 'success', None, None
@@ -614,8 +614,8 @@ def before_request_func():
 
 
 # MAPEO DE PRODUCTOS PARLEVEL <-> KAPPS
-# Los productos son tx.elementos con id_module_cat = 3 (INVENTARIO); sus datos están en
-# tx.elementos_datos según tx.ctz (pantalla 1 = PRODUCTO). El nombre es ctz.id_ctz_base = 1.
+# Los productos son elementos con id_module_cat = 3 (INVENTARIO); sus datos están en
+# elementos_datos según ctz (pantalla 1 = PRODUCTO). El nombre es ctz.id_ctz_base = 1.
 PARLEVEL_MODULO_INVENTARIO, PARLEVEL_PANTALLA_PRODUCTO, PARLEVEL_CAMPO_NOMBRE = 3, 1, 1
 
 def _parlevel_productos(cursor, kapp_id):
@@ -625,11 +625,11 @@ def _parlevel_productos(cursor, kapp_id):
                   GROUP_CONCAT(IF(ctz.id_ctz_base=%s, NULL,
                                   CONCAT(ctz.field_name, ': ', IF(ctz.id_field_type=6, fto.value, ed.valor)))
                                ORDER BY IFNULL(ctz.id_ctz_base,15000), ctz.id SEPARATOR ' | ') propiedades
-           FROM tx.elementos e
-                JOIN tx.elementos_datos ed ON ed.id_elemento=e.id
-                JOIN tx.ctz ON ctz.id=ed.id_ctz AND ctz.id_kapp=e.id_kapp
+           FROM elementos e
+                JOIN elementos_datos ed ON ed.id_elemento=e.id
+                JOIN ctz ON ctz.id=ed.id_ctz AND ctz.id_kapp=e.id_kapp
                             AND ctz.id_module_screen=%s AND ctz.is_active=1
-                LEFT JOIN tx.ctz_fto fto ON ctz.id_field_type=6 AND fto.id=ed.valor
+                LEFT JOIN ctz_fto fto ON ctz.id_field_type=6 AND fto.id=ed.valor
            WHERE e.id_kapp=%s AND e.id_module_cat=%s
            GROUP BY e.id
            ORDER BY nombre""",
@@ -653,7 +653,7 @@ def parlevel():
         return render_template("no_dato.html", mensaje="KAPP no encontrada"), 404
     productos = _parlevel_productos(cursor, kapp_id)
     cursor.execute(
-        "select id, producto_id, parlevel_nombre from tx.parlevel_productos_map where kapp_id=%s and estado=1 order by parlevel_nombre",
+        "select id, producto_id, parlevel_nombre from parlevel_productos_map where kapp_id=%s and estado=1 order by parlevel_nombre",
         [kapp_id],
     )
     mapeos = {}
@@ -681,9 +681,9 @@ def crud_parlevel():
                 return {"result": "error", "reason": "El nombre debe tener entre 1 y 150 caracteres"}
             # el producto debe ser de esta KAPP y ser un producto (no un lote)
             cursor.execute(
-                """select 1 from tx.elementos e
+                """select 1 from elementos e
                    where e.id=%s and e.id_kapp=%s and e.id_module_cat=%s
-                     and exists (select 1 from tx.elementos_datos ed join tx.ctz on ctz.id=ed.id_ctz
+                     and exists (select 1 from elementos_datos ed join ctz on ctz.id=ed.id_ctz
                                  where ed.id_elemento=e.id and ctz.id_module_screen=%s)""",
                 [producto_id, kapp_id, PARLEVEL_MODULO_INVENTARIO, PARLEVEL_PANTALLA_PRODUCTO],
             )
@@ -691,7 +691,7 @@ def crud_parlevel():
                 return {"result": "error", "reason": "El producto no pertenece a esta KAPP"}
             try:
                 cursor.execute(
-                    "insert into tx.parlevel_productos_map (kapp_id, producto_id, parlevel_nombre, id_usuario) values (%s,%s,%s,%s)",
+                    "insert into parlevel_productos_map (kapp_id, producto_id, parlevel_nombre, id_usuario) values (%s,%s,%s,%s)",
                     [kapp_id, producto_id, nombre, session.get("id")],
                 )
             except mysql.connector.errors.IntegrityError:
@@ -700,7 +700,7 @@ def crud_parlevel():
             mysqlConn.commit()
             return {"result": "success", "data": {"id": new_id, "producto_id": producto_id, "parlevel_nombre": nombre}}
         if accion == "delete":
-            cursor.execute("delete from tx.parlevel_productos_map where id=%s and kapp_id=%s", [int(datos.get("id")), kapp_id])
+            cursor.execute("delete from parlevel_productos_map where id=%s and kapp_id=%s", [int(datos.get("id")), kapp_id])
             mysqlConn.commit()
             return {"result": "success"}
         return {"result": "error", "reason": "Acción no válida"}, 400
