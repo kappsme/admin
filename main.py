@@ -56,7 +56,7 @@ def datos_kapp(id_kapp=None):
     sql =  """select k.id "ID KAPP", k.clave "CLAVE", k.name "NOMBRE", state "ESTADO", date(k.fecha_cobro) "FECHA COBRO"
                 , ifnull(datediff(now(),DATE_ADD(date_format(concat(ifnull(max(periodo), CAST(date_format(fecha_cobro,"%Y%m") AS CHAR CHARACTER SET utf8))
                         ,CAST(date_format(fecha_cobro,"%d") AS CHAR CHARACTER SET utf8)),"%Y%m%d"),INTERVAL 1 MONTH)),0) "DIAS ATRASO" 
-                , licencias "LICENCIAS" 
+                , licencias "LICENCIAS"
                 , dias_vencimiento "DIAS VENCIMIENTO"
                 , count(distinct ka.username) "CUENTAS ACTIVAS" 
                 , monthname(concat(SUBSTRING(max(periodo), 1, 4),"-",SUBSTRING(max(periodo), 5, 2),"-01")) ULTIMOPAGO_MES

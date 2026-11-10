@@ -393,3 +393,103 @@ CREATE TABLE IF NOT EXISTS inv_favoritos (
     UNIQUE KEY uq_inv_favoritos (kapp_id, screen_id, elemento_id),
     KEY ix_inv_favoritos_orden (kapp_id, screen_id, ranking)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+
+-- ---------------------------------------------------------------------
+-- 2026-11-10  Licencias de barberías por KAPP: parámetro de configuración (módulo BARBERIA)
+--   Cuántas barberías ACTIVAS puede tener una KAPP. Es un dato comercial
+--   (va ligado al precio): se configura en Admin, en la configuración de cada
+--   KAPP (Parámetros > BARBERIA > LICENCIAS), igual que los demás parámetros.
+--   El administrador de la KAPP en TX ve cuántas usa y no puede cambiarlas
+--   (TX no escribe en tx_params).
+--   Reglas: solo cuentan las barberías activas (brb_barberias.activo = 1).
+--   Una KAPP que ya está por encima del límite no pierde nada: sigue
+--   operando, pero no puede crear ni activar más.
+--   Valor inicial 1 (default_value). El parámetro solo aparece en Admin para
+--   las KAPPs que tienen activo el módulo BARBERIA.
+--   TX lo busca por módulo + categoría 'LICENCIAS': no cambiar la categoría.
+--   Idempotente. Una versión anterior de este cambio usaba una columna en
+--   kapps_db.kapps; se descartó. Si esa columna llegó a crearse (todas las KAPP
+--   con su valor inicial 1), el último paso la elimina.
+-- ---------------------------------------------------------------------
+INSERT INTO kapps_db.tx_params_cat
+    (module_id, nombre, descripcion, estado, html_type, html_additional, category, customizable, required, `system`, default_value)
+SELECT c.id, 'Licencias de Barberías', 'Barberías activas permitidas', 1, 'number', 'min=0 max=999 step=1', 'LICENCIAS', 1, 1, 1, '1'
+FROM kapps_db.kapps_modules_cat c
+WHERE c.code = 'brb'
+  AND NOT EXISTS (SELECT 1 FROM kapps_db.tx_params_cat p WHERE p.module_id = c.id AND p.category = 'LICENCIAS');
+
+SET @brb_col := (SELECT COUNT(*) FROM information_schema.columns
+                  WHERE table_schema = 'kapps_db' AND table_name = 'kapps' AND column_name = 'licencias_barberias');
+SET @brb_sql := IF(@brb_col = 1, 'ALTER TABLE kapps_db.kapps DROP COLUMN licencias_barberias', 'SELECT 1');
+PREPARE brb_stmt FROM @brb_sql;
+EXECUTE brb_stmt;
+DEALLOCATE PREPARE brb_stmt;
+
+
+-- ---------------------------------------------------------------------
+-- 2026-11-11  PARLEVEL: mapeo de máquinas y tabla de la carga del Prekitting (módulo DESPACHO)
+--   Estas dos tablas ya se usan en el código (mod_dispatch.parlevel_guardar) y están
+--   definidas en kappsDB/cambios_a_prod.sql, pero no en este archivo: una base nueva
+--   no las tenía y la carga del Prekitting fallaba. Aquí se crean de forma idempotente
+--   (si ya existen en producción no se toca nada).
+--
+--   parlevel_maquinas_map: a qué máquina de KAPPS (tx.clientes, id_module_cat = 5)
+--     corresponde cada nombre de máquina de PARLEVEL.
+--     Mapeo 1 a 1: un nombre de PARLEVEL por máquina y una máquina por nombre
+--     (UNIQUE id_kapp + parlevel_machine, y UNIQUE id_kapp + id_cliente).
+--   parlevel_productos_map (ver sección 2026-11-06): desde esta versión TX también lo
+--     escribe y mantiene 1 a 1 (un nombre por producto) en la aplicación; la tabla
+--     no cambia (puede haber alias viejos creados desde Admin: TX los reemplaza al
+--     guardar el producto).
+--   parlevel_productos_prekiting: filas de cada archivo Prekitting cargado.
+--
+--   La integración se activa por KAPP con el parámetro "Integración con PARLEVEL"
+--   (módulo DESPACHO, ya existente). Sin él TX no muestra nada de esto.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tx.parlevel_maquinas_map (
+    id               INT NOT NULL AUTO_INCREMENT,
+    id_kapp          INT NOT NULL                                   COMMENT 'ID de la KAPP (tenant)',
+    parlevel_machine VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+                                                                    COMMENT 'Nombre de la máquina en PARLEVEL',
+    id_cliente       INT NOT NULL                                   COMMENT 'ID de la máquina en KAPPS: tx.clientes.id (id_module_cat = 5)',
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_kapp_machine (id_kapp, parlevel_machine),
+    UNIQUE KEY uq_kapp_cliente (id_kapp, id_cliente)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COMMENT = 'Mapeo de máquinas KAPPS <-> PARLEVEL por KAPP';
+
+CREATE TABLE IF NOT EXISTS tx.parlevel_productos_prekiting (
+    id                    INT NOT NULL AUTO_INCREMENT,
+    id_carga              CHAR(36) NOT NULL,
+    id_kapp               INT NOT NULL,
+    id_usuario            INT NOT NULL,
+    nombre_archivo        VARCHAR(255) NULL,
+    fecha_proceso         DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    daily_route           VARCHAR(20) NULL,
+    planned_for           DATE NULL,
+    route                 VARCHAR(100) NULL,
+    location              VARCHAR(150) NULL,
+    asset                 VARCHAR(50) NULL,
+    machine               VARCHAR(100) NULL,
+    transaccion           VARCHAR(20) NULL,
+    prekit_alias          VARCHAR(20) NULL,
+    cst_id                VARCHAR(20) NULL,
+    product               VARCHAR(200) NULL,
+    price                 DECIMAL(12,4) NULL,
+    prekit_quantity       INT NULL,
+    parlevel              INT NULL,
+    filler_username       VARCHAR(100) NULL,
+    delivery_sequence     INT NULL,
+    id_producto           INT NULL,
+    existencia            INT NULL,
+    requerido_total       INT NULL,
+    estado_disponibilidad VARCHAR(20) NULL,
+    id_cliente            INT NULL,
+    PRIMARY KEY (id),
+    KEY ix_carga (id_carga),
+    KEY ix_kapp_fecha (id_kapp, planned_for, daily_route)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COMMENT = 'Filas de cada archivo Prekitting de PARLEVEL cargado';

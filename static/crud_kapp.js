@@ -333,6 +333,9 @@ document.getElementById('modal-crud-kapp-btn').onclick = function () {
             .then(json => {
                 if (json.result == "success") {
                     location.reload();
+                } else {  // antes no mostraba nada si el servidor rechazaba los datos
+                    document.getElementById("modal-crud-kapp-body").textContent = json.reason || 'No se pudo guardar la KAPP.';
+                    document.getElementById("modal-crud-kapp-btn").hidden = true;
                 }
             });
     })
