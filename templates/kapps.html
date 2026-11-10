@@ -29,6 +29,9 @@
 {% if stats %}
 <!-- LISTÓN DE ESTADÍSTICAS: los botones aplican el filtro correspondiente -->
 <div class="stats-ribbon" id="kapps-stats" role="group" aria-label="Resumen de KAPPs">
+	<div class="stat" title="Usuarios activos de las KAPPs activas">
+		<span class="stat-num" id="stat-usuarios">{{ stats.usuarios }}</span><span class="stat-label">Usuarios activos</span>
+	</div>
 	<button type="button" class="stat stat-btn" data-reset="1" aria-pressed="false">
 		<span class="stat-num">{{ stats.total }}</span><span class="stat-label">KAPPs</span>
 	</button>
@@ -41,9 +44,6 @@
 	<button type="button" class="stat stat-btn stat-warn" data-atraso="pos" aria-pressed="false">
 		<span class="stat-num">{{ stats.vencidas }}</span><span class="stat-label">Vencidas</span>
 	</button>
-	<div class="stat">
-		<span class="stat-num">{{ stats.usuarios }}</span><span class="stat-label">Usuarios activos</span>
-	</div>
 </div>
 {% endif %}
 
@@ -130,7 +130,7 @@
 					value="{{rmov['DIAS VENCIMIENTO']}}">
 			</td>
 			<td class="p-1 m-0 d-none d-md-table-cell">
-				<p class="p-0 m-0">
+				<p class="p-0 m-0" id="kapp-{{rmov['ID KAPP']}}-cuentas">
 					{{ rmov['CUENTAS ACTIVAS'] }}</p>
 			</td>
 
@@ -463,14 +463,20 @@
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
 			</div>
 			<div class="modal-body">
+				<div class="d-flex justify-content-between align-items-center mb-2">
+					<span id="usr-aviso" class="text-success" role="status"></span>
+					<button type="button" class="btn btn-primary btn-sm" id="usr-nuevo-btn">Agregar usuario</button>
+				</div>
 				<div class="table-responsive">
 					<table class="table table-sm modal-table" id="modal-kapp-usuarios-tabla" name="modal-kapp-usuarios-tabla">
 						<thead class="bg-primary">
 							<tr>
 								<th scope="col">ID</th>
 								<th scope="col">Usuario</th>
+								<th scope="col">Nombre</th>
 								<th scope="col">Email</th>
 								<th scope="col">Nivel</th>
+								<th scope="col">Estado</th>
 								<th scope="col">Último request</th>
 								<th scope="col"></th>
 							</tr>
@@ -479,6 +485,97 @@
 						</tbody>
 					</table>
 				</div>
+
+				<!-- EDITAR USUARIO: se muestra al elegir un usuario de la tabla -->
+				<form id="usr-form" class="mt-3" hidden>
+					<h6 class="modal-section" id="usr-titulo"></h6>
+					<input type="hidden" id="usr-id">
+					<div class="row g-2">
+						<div class="col-12 col-sm-6">
+							<label class="form-label" for="usr-name">Nombres</label>
+							<input class="form-control" type="text" id="usr-name" maxlength="30" required>
+						</div>
+						<div class="col-12 col-sm-6">
+							<label class="form-label" for="usr-lastname">Apellidos</label>
+							<input class="form-control" type="text" id="usr-lastname" maxlength="30" required>
+						</div>
+						<div class="col-12 col-sm-6">
+							<label class="form-label" for="usr-email">Email</label>
+							<input class="form-control" type="email" id="usr-email" maxlength="100" required>
+						</div>
+						<div class="col-6 col-sm-3">
+							<label class="form-label" for="usr-phone1">Teléfono 1</label>
+							<input class="form-control" type="tel" id="usr-phone1" maxlength="17">
+						</div>
+						<div class="col-6 col-sm-3">
+							<label class="form-label" for="usr-phone2">Teléfono 2</label>
+							<input class="form-control" type="tel" id="usr-phone2" maxlength="17">
+						</div>
+						<div class="col-6 col-sm-3">
+							<label class="form-label" for="usr-nivel">Nivel</label>
+							<select class="form-select" id="usr-nivel">
+								<option value="1">Administrador</option>
+								<option value="2">Operador N1</option>
+								<option value="3">Operador N2</option>
+							</select>
+						</div>
+						<div class="col-6 col-sm-3">
+							<label class="form-label" for="usr-estado">Estado</label>
+							<select class="form-select" id="usr-estado">
+								<option value="1">Activo</option>
+								<option value="0">Desactivo</option>
+								<option value="2">N/A</option>
+							</select>
+						</div>
+						<div class="col-6 col-sm-3">
+							<label class="form-label" for="usr-vigencia">Sesión (minutos)</label>
+							<input class="form-control" type="number" id="usr-vigencia" min="1" required>
+						</div>
+						<div class="col-6 col-sm-3">
+							<label class="form-label" for="usr-bloqueo">Bloqueado</label>
+							<div class="form-check form-switch m-0">
+								<input class="form-check-input" type="checkbox" role="switch" id="usr-bloqueo">
+							</div>
+						</div>
+						<div class="col-12 text-end">
+							<span id="usr-msg" class="text-danger me-2" role="alert"></span>
+							<button type="button" class="btn btn-secondary" id="usr-cancelar">Cancelar</button>
+							<button type="submit" class="btn btn-primary">Guardar usuario</button>
+						</div>
+					</div>
+				</form>
+
+				<!-- AGREGAR USUARIO: el sistema genera usuario y contraseña y los envía por correo -->
+				<form id="usr-nuevo-form" class="mt-3" hidden>
+					<h6 class="modal-section">Agregar usuario</h6>
+					<div class="row g-2">
+						<div class="col-12 col-sm-6">
+							<label class="form-label" for="usr-nuevo-name">Nombres</label>
+							<input class="form-control" type="text" id="usr-nuevo-name" maxlength="30" required>
+						</div>
+						<div class="col-12 col-sm-6">
+							<label class="form-label" for="usr-nuevo-lastname">Apellidos</label>
+							<input class="form-control" type="text" id="usr-nuevo-lastname" maxlength="30" required>
+						</div>
+						<div class="col-12 col-sm-8">
+							<label class="form-label" for="usr-nuevo-email">Email (recibe el acceso)</label>
+							<input class="form-control" type="email" id="usr-nuevo-email" maxlength="100" required>
+						</div>
+						<div class="col-12 col-sm-4">
+							<label class="form-label" for="usr-nuevo-nivel">Nivel</label>
+							<select class="form-select" id="usr-nuevo-nivel">
+								<option value="2">Operador N1</option>
+								<option value="3">Operador N2</option>
+								<option value="1">Administrador</option>
+							</select>
+						</div>
+						<div class="col-12 text-end">
+							<span id="usr-nuevo-msg" class="text-danger me-2" role="alert"></span>
+							<button type="button" class="btn btn-secondary" id="usr-nuevo-cancelar">Cancelar</button>
+							<button type="submit" class="btn btn-primary" id="usr-nuevo-guardar">Crear y enviar correo</button>
+						</div>
+					</div>
+				</form>
 			</div>
 			<div class="modal-footer">
 				<button id="modal-kapp-pago-cerrar" name="modal-kapp-pago-cerrar" type="button"

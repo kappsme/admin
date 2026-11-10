@@ -76,6 +76,25 @@ def datos_kapp(id_kapp=None):
     cursor.close()
     return kapps_info, columnas
 
+def stats_usuarios(cursor, kapp_id=None):
+    """Usuarios activos de las KAPPs activas (listón) y, con kapp_id, las cuentas activas de esa KAPP (su fila)."""
+    cursor.execute("""select count(*) n from kapps_db.accounts a
+                        join kapps_db.kapps k on k.id=a.kapp_id and k.state='ACTIVE' where a.estado=1""")
+    datos = {"usuarios": cursor.fetchone()["n"]}
+    if kapp_id is not None:
+        cursor.execute("select count(*) n from kapps_db.accounts where estado=1 and kapp_id=%s", [kapp_id])
+        datos.update(kapp_id=kapp_id, cuentas_kapp=cursor.fetchone()["n"])
+    return datos
+
+
+def licencias_libres(cursor, kapp_id):
+    """Licencias de la KAPP menos sus usuarios activos (0 si la KAPP no existe)."""
+    cursor.execute("""select ifnull(licencias,0) - (select count(*) from kapps_db.accounts where kapp_id=k.id and estado=1) libres
+                        from kapps_db.kapps k where k.id=%s""", [kapp_id])
+    fila = cursor.fetchone()
+    return fila["libres"] if fila else 0
+
+
 @kapps_admin.route("/home/", methods=["GET", "POST"])
 def home():
     if "token" in session:
@@ -87,8 +106,7 @@ def home():
 
 
         # ESTADÍSTICAS (listón de la lista de KAPPs)
-        cursor.execute("select count(*) n from kapps_db.accounts where estado=1 and kapp_id<>0")
-        usuarios_activos = cursor.fetchone()["n"]
+        usuarios_activos = stats_usuarios(cursor)["usuarios"]
         stats = {
             "total": len(kapps_info),
             "activas": sum(1 for k in kapps_info if k["ESTADO"] == "ACTIVE"),
@@ -362,11 +380,13 @@ def crud_kapp():
                 result, reason, data = 'error', 'No se pudo enviar el correo', {'email': admin["email"]}
     elif accion == "8":  # DATOS USUARIOS
         cursor.execute(
-            """SELECT id, username, email, nivel, estado, ifnull(al.ultimo_request,'') ultimo_request 
-                FROM kapps_db.accounts a 
+            """SELECT a.id, username, name, lastname, email, ifnull(phone1,'') phone1, ifnull(phone2,'') phone2
+                    , nivel, estado, bloqueo, round(vigencia/60) vigencia, date_format(fecha_creacion,'%Y-%m-%d') fecha_creacion
+                    , ifnull(al.ultimo_request,'') ultimo_request
+                FROM kapps_db.accounts a
                     LEFT JOIN kapps_db.accounts_log al on al.id_account=a.id
                 where kapp_id =%s
-                order by estado desc""",
+                order by (estado=1) desc, estado desc, username""",
             (
                 request.json["kapp_id"],
             ),
@@ -376,7 +396,61 @@ def crud_kapp():
     elif accion == "9":  # ANULAR SESION DE USUARIO
         cursor.execute("delete from kapps_db.accounts_log where id_account=%s", [request.json["usuarioId"]])
         result, reason, data = 'success', None, None
-    
+    elif accion == "11":  # ACTUALIZA USUARIO (usuario y contraseña no se editan aquí)
+        u = request.json
+        limites = {"name": 30, "lastname": 30, "email": 100, "phone1": 17, "phone2": 17}  # largo de cada columna
+        textos = {c: str(u.get(c) or "").strip() for c in limites}
+        try:
+            nivel, estado, bloqueo, vigencia = int(u["nivel"]), int(u["estado"]), int(u["bloqueo"]), int(u["vigencia"])
+        except (KeyError, TypeError, ValueError):
+            nivel = None
+        cursor.execute("select estado from kapps_db.accounts where id=%s and kapp_id=%s", (u.get("usuarioId"), u.get("kapp_id")))
+        actual = cursor.fetchone()
+        if not actual:
+            result, reason = 'error', 'Usuario no encontrado en esta KAPP'
+        elif (nivel not in (1, 2, 3) or estado not in (0, 1, 2) or bloqueo not in (0, 1) or not 1 <= vigencia <= 100000
+                or not textos["name"] or not textos["lastname"] or "@" not in textos["email"]
+                or any(len(textos[c]) > limites[c] for c in limites)):
+            result, reason = 'error', 'Datos de usuario inválidos'
+        elif estado == 1 and actual["estado"] != 1 and licencias_libres(cursor, u.get("kapp_id")) < 1:
+            # solo al pasar a Activo: editar a quien ya estaba activo no se bloquea aunque la KAPP esté al tope
+            result, reason = 'error', 'La KAPP ya usa todas sus licencias. Desactive otro usuario o aumente las licencias.'
+        else:
+            cursor.execute(
+                """update kapps_db.accounts set name=%s, lastname=%s, email=%s, phone1=%s, phone2=%s
+                        , nivel=%s, estado=%s, bloqueo=%s, vigencia=%s
+                    where id=%s and kapp_id=%s""",
+                (textos["name"], textos["lastname"], textos["email"], textos["phone1"] or None, textos["phone2"] or None,
+                 nivel, estado, bloqueo, vigencia * 60, u.get("usuarioId"), u.get("kapp_id")),
+            )
+            result, reason, data = 'success', None, stats_usuarios(cursor, u.get("kapp_id"))
+    elif accion == "12":  # AGREGAR USUARIO A UNA KAPP + correo de bienvenida con su acceso
+        nuevo, error = nuevo_admin.validar_usuario(request.json)
+        cursor.execute("select name, clave from kapps_db.kapps where id=%s", [request.json.get("kapp_id")])
+        kapp = cursor.fetchone()
+        if error or not kapp:
+            result, reason = 'error', error or 'KAPP no encontrada'
+        elif licencias_libres(cursor, request.json["kapp_id"]) < 1:
+            result, reason = 'error', 'La KAPP ya usa todas sus licencias. Desactive otro usuario o aumente las licencias.'
+        else:
+            username = nuevo_admin.generar_username(cursor, nuevo["name"], nuevo["lastname"])
+            password = nuevo_admin.generar_password()
+            # mismo cifrado que usa TX; password_reset=1 marca la contraseña como temporal
+            cursor.execute(
+                """insert into kapps_db.accounts (username, email, name, lastname, kapp_id, nivel, estado, bloqueo, vigencia, password_reset, password2)
+                   values (%s,%s,%s,%s,%s,%s,1,0,1200,1,aes_encrypt(%s,UNHEX(SHA2(%s,512))))""",
+                (username, nuevo["email"], nuevo["name"].lower(), nuevo["lastname"].lower(), request.json["kapp_id"],
+                 nuevo["nivel"], password, os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN')))
+            try:
+                nuevo_admin.enviar_correo_acceso(nuevo["email"], nuevo["name"].title(), kapp["name"], kapp["clave"],
+                                                 username, password, es_admin=False)
+                result, reason = 'success', None
+                data = dict(stats_usuarios(cursor, request.json["kapp_id"]), username=username, email=nuevo["email"])
+            except Exception:
+                mysqlConn.rollback()  # sin correo nadie conoce la contraseña: no se deja el usuario creado
+                kapps_admin.logger.exception("Error enviando correo de bienvenida")
+                result, reason = 'error', 'No se pudo enviar el correo; el usuario no fue creado. Intente de nuevo.'
+
     mysqlConn.commit()
     cursor.close()
     return {'result' : result, 'reason' : reason, 'data' : data}

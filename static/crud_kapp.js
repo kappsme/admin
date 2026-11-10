@@ -75,19 +75,40 @@ function tablaDeUsuarios(kappIDX) {
                     const tblBody = document.getElementById("modal-kapp-usuarios-tabla-body");
                     tblBody.innerHTML = '';
                     // creating all cells
+                    document.getElementById('usr-form').hidden = true;
+                    document.getElementById('usr-nuevo-form').hidden = true;
+                    const niveles = { 1: 'Administrador', 2: 'Operador N1', 3: 'Operador N2' };
+                    const estados = { 1: 'Activo', 0: 'Desactivo', 2: 'N/A' };
                     json.data.usuarios.forEach((usuario) => {
                         const row = document.createElement("tr");
-                        if (usuario['estado'] == 0)
-                            row.classList.add('text-decoration-line-through')
-                        for (const column of ['id', 'username', 'email', 'nivel', 'ultimo_request']) {
+                        const textos = {
+                            id: usuario['id'],
+                            username: usuario['username'],
+                            nombre: usuario['name'] + ' ' + usuario['lastname'],
+                            email: usuario['email'],
+                            nivel: niveles[usuario['nivel']] || usuario['nivel'],
+                            estado: (estados[usuario['estado']] || usuario['estado']) + (usuario['bloqueo'] == 1 ? ' · Bloqueado' : ''),
+                        };
+                        for (const column of ['id', 'username', 'nombre', 'email', 'nivel', 'estado', 'ultimo_request', 'editar']) {
                             const cell = document.createElement("td");
                             if (column == 'ultimo_request') {
                                 var cellText = "<button id='btn-kapp-anular-sesion' type='button' class='btnAnularSesion p-0 m-0' data-usuario-id='" + usuario['id'] + "'> - </button><br>" + usuario['ultimo_request']
                                 cell.innerHTML = cellText
                             }
+                            else if (column == 'editar') {
+                                const btn = document.createElement("button");
+                                btn.type = "button";
+                                btn.className = "px-2";
+                                btn.textContent = "Editar";
+                                btn.onclick = function () { editarUsuario(kappIDX, usuario); };
+                                cell.appendChild(btn);
+                            }
                             else  {
-                                var cellText = document.createTextNode(usuario[column]);
+                                var cellText = document.createTextNode(textos[column]);
                                 cell.appendChild(cellText);
+                                // solo el texto va tachado; los botones de la fila quedan normales
+                                if (usuario['estado'] == 0) cell.classList.add('text-decoration-line-through');
+                                if (column == 'estado') cell.classList.add(usuario['estado'] == 1 && usuario['bloqueo'] != 1 ? 'text-success' : 'text-danger', 'fw-bold');
                             }
                             row.appendChild(cell);
                         }
@@ -119,6 +140,83 @@ function tablaDeUsuarios(kappIDX) {
             });
     });
 }
+
+// EDITAR USUARIO: llena el formulario bajo la tabla de usuarios
+const camposUsuario = ['name', 'lastname', 'email', 'phone1', 'phone2', 'nivel', 'estado', 'vigencia'];
+function editarUsuario(kappIDX, usuario) {
+    const form = document.getElementById('usr-form');
+    document.getElementById('usr-titulo').textContent = 'Editar usuario ' + usuario['username'] + ' (ID ' + usuario['id'] + ', creado ' + usuario['fecha_creacion'] + ')';
+    document.getElementById('usr-id').value = usuario['id'];
+    for (const campo of camposUsuario) document.getElementById('usr-' + campo).value = usuario[campo];
+    document.getElementById('usr-bloqueo').checked = usuario['bloqueo'] == 1;
+    document.getElementById('usr-msg').textContent = '';
+    document.getElementById('usr-nuevo-form').hidden = true;
+    form.hidden = false;
+    form.scrollIntoView({ block: 'nearest' });
+    document.getElementById('usr-name').focus();
+    document.getElementById('usr-cancelar').onclick = function () { form.hidden = true; };
+    form.onsubmit = function (e) {
+        e.preventDefault();
+        const pl = { accion: '11', kapp_id: kappIDX, usuarioId: usuario['id'], bloqueo: document.getElementById('usr-bloqueo').checked ? 1 : 0 };
+        for (const campo of camposUsuario) pl[campo] = document.getElementById('usr-' + campo).value;
+        fetch($SCRIPT_ROOT + '/crud_kapp', {
+            method: "POST",
+            body: JSON.stringify(pl),
+            headers: { "Content-type": "application/json; charset=UTF-8" }
+        }).then(response => response.json())
+            .then(json => {
+                if (json.result == "success") {
+                    actualizarStatsUsuarios(json.data);
+                    tablaDeUsuarios(kappIDX); // recarga la tabla y oculta el formulario
+                }
+                else document.getElementById('usr-msg').textContent = json.reason || 'No se pudo guardar';
+            })
+            .catch(() => { document.getElementById('usr-msg').textContent = 'No se pudo guardar'; });
+    };
+}
+
+// Refleja en la pantalla principal los conteos que devuelve el servidor al cambiar o crear un usuario
+function actualizarStatsUsuarios(datos) {
+    const total = document.getElementById('stat-usuarios');
+    if (total) total.textContent = datos.usuarios;
+    const cuentas = document.getElementById('kapp-' + datos.kapp_id + '-cuentas');
+    if (cuentas) cuentas.textContent = datos.cuentas_kapp;
+}
+
+// AGREGAR USUARIO A LA KAPP ABIERTA EN EL MODAL (kappId)
+document.getElementById('usr-nuevo-btn').onclick = function () {
+    const form = document.getElementById('usr-nuevo-form');
+    form.reset();
+    document.getElementById('usr-nuevo-msg').textContent = '';
+    document.getElementById('usr-form').hidden = true;
+    form.hidden = false;
+    form.scrollIntoView({ block: 'nearest' });
+    document.getElementById('usr-nuevo-name').focus();
+};
+document.getElementById('usr-nuevo-cancelar').onclick = function () { document.getElementById('usr-nuevo-form').hidden = true; };
+document.getElementById('usr-nuevo-form').onsubmit = function (e) {
+    e.preventDefault();
+    const btn = document.getElementById('usr-nuevo-guardar'), msg = document.getElementById('usr-nuevo-msg');
+    const pl = { accion: '12', kapp_id: kappId };
+    for (const campo of ['name', 'lastname', 'email', 'nivel']) pl[campo] = document.getElementById('usr-nuevo-' + campo).value;
+    btn.disabled = true; // el envío del correo tarda unos segundos: evita crear el usuario dos veces
+    msg.textContent = '';
+    fetch($SCRIPT_ROOT + '/crud_kapp', {
+        method: "POST",
+        body: JSON.stringify(pl),
+        headers: { "Content-type": "application/json; charset=UTF-8" }
+    }).then(response => response.json())
+        .then(json => {
+            if (json.result == "success") {
+                actualizarStatsUsuarios(json.data);
+                document.getElementById('usr-aviso').textContent = 'Usuario ' + json.data.username + ' creado. Se envió el acceso a ' + json.data.email + '.';
+                tablaDeUsuarios(kappId);
+            }
+            else msg.textContent = json.reason || 'No se pudo crear el usuario';
+        })
+        .catch(() => { msg.textContent = 'No se pudo crear el usuario'; })
+        .finally(() => { btn.disabled = false; });
+};
 
 var kappId = -1;
 
@@ -160,6 +258,7 @@ for (let btn of btnsVerUsuarios) {
     btn.onclick = function () {
         kappId = this.getAttributeNode('data-kapp-id').value;
         document.getElementById('modal-kapp-pago-btn-guardar').getAttributeNode('data-kapp-id').value = kappId;
+        document.getElementById('usr-aviso').textContent = '';
         tablaDeUsuarios(kappId)
     };
 }

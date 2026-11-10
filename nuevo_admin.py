@@ -85,8 +85,25 @@ def generar_username(cursor, nombre, apellido):
     return base + str(max(usados, default=0) + 1)
 
 
-def enviar_correo_acceso(destino, nombre_admin, kapp_nombre, clave, username, password):
-    """Envía usuario y contraseña temporal al administrador de la nueva KAPP. Lanza excepción si falla."""
+def validar_usuario(d):
+    """Datos de un usuario nuevo de una KAPP. Devuelve (datos_limpios, None) o (None, mensaje de error)."""
+    limpio = {}
+    for k, etiqueta, maximo in (("name", "Nombres", 30), ("lastname", "Apellidos", 30), ("email", "Email", 100)):
+        v = str(d.get(k) or "").strip()
+        if not v or len(v) > maximo or any(ord(c) < 32 for c in v):  # saltos de línea irían a los encabezados del correo
+            return None, "%s inválido (obligatorio, máximo %d caracteres)" % (etiqueta, maximo)
+        limpio[k] = v
+    if not EMAIL_RE.match(limpio["email"]):
+        return None, "Correo inválido: " + limpio["email"]
+    if str(d.get("nivel")) not in ("1", "2", "3"):
+        return None, "Nivel inválido"
+    limpio["nivel"] = int(d["nivel"])
+    return limpio, None
+
+
+def enviar_correo_acceso(destino, nombre_admin, kapp_nombre, clave, username, password, es_admin=True):
+    """Correo de bienvenida con el acceso (link con la clave de la KAPP, usuario y contraseña temporal).
+    es_admin=True: administrador de una KAPP nueva; False: usuario nuevo de una KAPP. Lanza excepción si falla."""
     servidor, puerto = os.getenv("MAIL_SERVER"), int(os.getenv("MAIL_PORT") or 587)
     usuario, clave_smtp = os.getenv("MAIL_USERNAME"), os.getenv("MAIL_PASSWORD")
     remitente = os.getenv("MAIL_SENDER") or usuario
@@ -94,21 +111,35 @@ def enviar_correo_acceso(destino, nombre_admin, kapp_nombre, clave, username, pa
         raise RuntimeError("Correo no configurado (MAIL_SERVER / MAIL_SENDER)")
     url = "%s/%s" % (TX_URL.rstrip("/"), clave)
     e = escape
-    html = """<div style="font-family:Arial,sans-serif;color:#1b2340;max-width:520px">
-<h2 style="margin:0 0 8px">Bienvenido a KAPPS.me</h2>
-<p>Hola {nombre}, se creó la KAPP <b>{kapp}</b> y usted es su administrador.</p>
-<table style="border-collapse:collapse;margin:14px 0">
-<tr><td style="padding:6px 14px 6px 0;color:#6b7694">Acceso</td><td><a href="{url}">{url}</a></td></tr>
-<tr><td style="padding:6px 14px 6px 0;color:#6b7694">Usuario</td><td><b>{user}</b></td></tr>
-<tr><td style="padding:6px 14px 6px 0;color:#6b7694">Contraseña temporal</td><td><b style="font-family:monospace;font-size:16px">{pw}</b></td></tr>
+    intro = ("Se creó la KAPP %s y usted es su administrador." if es_admin else "Se creó su usuario en la KAPP %s.")
+    # la misma plantilla vive en tx/main.py (envio_correo tipo 8): si cambia aquí, cambiar allá.
+    # El logo es PNG servido por TX (static/logo.png): los clientes de correo no muestran SVG.
+    html = """<div style="background:#f3f6fc;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#1b2340">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden">
+<tr><td style="background:#1a73e8;padding:22px 28px;text-align:center">
+<img src="{logo}" width="56" height="56" alt="KAPPS.me" style="background:#ffffff;border-radius:12px;padding:6px">
+<div style="color:#ffffff;font-size:20px;font-weight:bold;margin-top:10px">KAPPS.me</div></td></tr>
+<tr><td style="padding:28px">
+<h2 style="margin:0 0 12px;font-size:22px">¡Le damos la bienvenida, {nombre}!</h2>
+<p style="margin:0 0 16px;line-height:1.5">{intro} Nos alegra tenerle a bordo: ya puede ingresar y empezar a trabajar.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 8px">
+<tr><td style="padding:6px 16px 6px 0;color:#6b7694">Código de KAPP</td><td><b style="font-family:monospace;font-size:16px">{clave}</b></td></tr>
+<tr><td style="padding:6px 16px 6px 0;color:#6b7694">Usuario</td><td><b>{user}</b></td></tr>
+<tr><td style="padding:6px 16px 6px 0;color:#6b7694">Contraseña temporal</td><td><b style="font-family:monospace;font-size:16px">{pw}</b></td></tr>
 </table>
-<p>Por seguridad, el sistema le pedirá cambiar la contraseña en su primer ingreso.</p></div>""".format(
-        nombre=e(nombre_admin), kapp=e(kapp_nombre), url=e(url), user=e(username), pw=e(password))
-    texto = ("Bienvenido a KAPPS.me\n\nSe creó la KAPP %s y usted es su administrador.\n\nAcceso: %s\nUsuario: %s\n"
-             "Contraseña temporal: %s\n\nPor seguridad, el sistema le pedirá cambiar la contraseña en su primer ingreso.\n"
-             % (kapp_nombre, url, username, password))
+<p style="text-align:center;margin:24px 0"><a href="{url}" style="background:#1a73e8;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;display:inline-block">Ingresar a KAPPS.me</a></p>
+<p style="margin:0 0 8px;font-size:13px;color:#6b7694">Si el botón no funciona, copie este enlace en su navegador: <a href="{url}">{url}</a></p>
+<p style="margin:0;font-size:13px;color:#6b7694">Por seguridad, cambie la contraseña en su primer ingreso.</p></td></tr>
+<tr><td style="background:#f3f6fc;padding:14px 28px;text-align:center;font-size:12px;color:#6b7694">KAPPS.me · Mensaje automático, no responda a este correo.</td></tr>
+</table></div>""".format(
+        logo=e(TX_URL.rstrip("/") + "/static/logo.png"), nombre=e(nombre_admin), intro=e(intro % kapp_nombre),
+        clave=e(clave), url=e(url), user=e(username), pw=e(password))
+    texto = ("Le damos la bienvenida a KAPPS.me\n\n%s\n\nAcceso: %s\nCódigo de KAPP: %s\nUsuario: %s\n"
+             "Contraseña temporal: %s\n\nPor seguridad, cambie la contraseña en su primer ingreso.\n"
+             % (intro % kapp_nombre, url, clave, username, password))
     msg = EmailMessage()
-    msg["Subject"], msg["From"], msg["To"] = "KAPPS.me - Acceso de administrador de %s" % kapp_nombre, remitente, destino
+    asunto = "KAPPS.me - Acceso de administrador de %s" if es_admin else "KAPPS.me - Bienvenido a %s"
+    msg["Subject"], msg["From"], msg["To"] = asunto % kapp_nombre, remitente, destino
     msg.set_content(texto)
     msg.add_alternative(html, subtype="html")
     smtp = smtplib.SMTP_SSL(servidor, puerto, timeout=20) if puerto == 465 else smtplib.SMTP(servidor, puerto, timeout=20)
