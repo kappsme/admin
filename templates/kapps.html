@@ -537,6 +537,19 @@
 								<input class="form-check-input" type="checkbox" role="switch" id="usr-bloqueo">
 							</div>
 						</div>
+						<div class="col-6 col-sm-3">
+							<label class="form-label" for="usr-google">Ingreso con Google</label>
+							<div class="form-check form-switch m-0">
+								<input class="form-check-input" type="checkbox" role="switch" id="usr-google">
+							</div>
+							<small id="usr-google-estado" class="text-muted"></small>
+						</div>
+						<div class="col-12 col-sm-6">
+							<label class="form-label" for="usr-nacimiento">Fecha de nacimiento</label>
+							<input class="form-control" type="date" id="usr-nacimiento" min="1900-01-01">
+							<small id="usr-registro" class="text-muted"></small>
+							<div class="form-text">La registra la persona al entrar. Solo corríjala si hay un error; vacía se le vuelve a pedir.</div>
+						</div>
 						<div class="col-12 text-end">
 							<span id="usr-msg" class="text-danger me-2" role="alert"></span>
 							<button type="button" class="btn btn-secondary" id="usr-cancelar">Cancelar</button>
@@ -568,6 +581,13 @@
 								<option value="3">Operador N2</option>
 								<option value="1">Administrador</option>
 							</select>
+						</div>
+						<div class="col-12">
+							<div class="form-check form-switch">
+								<input class="form-check-input" type="checkbox" role="switch" id="usr-nuevo-google" checked>
+								<label class="form-check-label" for="usr-nuevo-google">Puede entrar con Google (con la cuenta de este correo, si la KAPP tiene activo el ingreso con Google)</label>
+							</div>
+							<div class="form-text">Al entrar por primera vez registrará su fecha de nacimiento (18+) y aceptará la política de privacidad.</div>
 						</div>
 						<div class="col-12 text-end">
 							<span id="usr-nuevo-msg" class="text-danger me-2" role="alert"></span>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="{{ session.get('tema') or 'bosque' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Antes de continuar · KAPPS.me</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='login_files/favicon.ico') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='ui_tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='ui_suelta.css') }}">
+</head>
+<body>
+    <header class="suelta-banda">
+        <div class="marca">KAPPS.me<small>Administración</small></div>
+    </header>
+
+    <main class="suelta-hoja">
+        {% if nacimiento and politica_anterior %}
+        <h1>Actualizamos la política de privacidad</h1>
+        <p class="intro">Hola, {{ nombre }}. Para seguir usando KAPPS, lea y acepte la versión vigente.</p>
+        {% else %}
+        <h1>Antes de continuar, {{ nombre }}</h1>
+        <p class="intro">KAPPS es solo para personas mayores de 18 años. Registre su fecha de nacimiento y acepte la política
+            de privacidad. Lo hace una sola vez.</p>
+        {% endif %}
+
+        {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+        <form method="post" action="{{ url_for('bienvenida') }}">
+            <div class="campo">
+                {% if nacimiento %}
+                <span class="etiqueta">Fecha de nacimiento</span>
+                <span class="dato-fijo">{{ nacimiento.strftime('%d/%m/%Y') }}</span>
+                {% else %}
+                <label for="fecha_nacimiento">Fecha de nacimiento</label>
+                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required max="{{ fecha_maxima }}" min="1900-01-01"
+                    value="{{ request.form.get('fecha_nacimiento', '') }}" autocomplete="bday">
+                <div class="ayuda">Se usa solo para verificar que es mayor de edad. No se muestra a otros usuarios.</div>
+                {% endif %}
+            </div>
+
+            <label class="aceptar" for="acepto">
+                <input type="checkbox" id="acepto" name="acepto" value="1" required>
+                <span>He leído y acepto la <a href="{{ privacidad_url }}" target="_blank" rel="noopener">política de privacidad y
+                    tratamiento de datos personales</a> (versión {{ version }}), conforme a la Ley 8968 de Costa Rica.</span>
+            </label>
+
+            <div class="botones">
+                <button type="submit" class="boton">Continuar</button>
+                <a href="{{ url_for('logout') }}" class="boton sec">Salir</a>
+            </div>
+        </form>
+    </main>
+</body>
+</html>

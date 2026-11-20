@@ -1,0 +1,131 @@
+/* Componentes comunes tx-* (Usuarios, Perfil, Bienvenida, Privacidad y los que agrega tx_ui.js en todos los módulos).
+   Solo usan los tokens de ui_tokens.css. Lo cargan TX (base_layout.html y las páginas sueltas) y Barberías. */
+
+/* encabezado de una pantalla: título a la izquierda, acciones a la derecha */
+.tx-pagina { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--e3); margin: 0 0 var(--e5); }
+.tx-pagina h1 { font-size: var(--t-xl); font-weight: 800; color: var(--tema-tinta); margin: 0; letter-spacing: -.02em; }
+.tx-pagina p { margin: 2px 0 0; color: var(--texto-2); }
+.tx-acciones { display: flex; flex-wrap: wrap; gap: var(--e2); align-items: center; }
+
+/* panel de papel */
+.tx-panel { background: var(--fondo); border-radius: var(--radio); box-shadow: var(--sombra); padding: var(--e5); }
+.tx-panel + .tx-panel { margin-top: var(--e4); }
+.tx-panel h2 { font-size: var(--t-m); font-weight: 700; margin: 0 0 var(--e3); color: var(--texto); }
+
+/* fila de cifras */
+.tx-cifras { display: flex; flex-wrap: wrap; gap: var(--e3) var(--e6); align-items: center; }
+.tx-cifra { color: var(--texto-2); font-size: var(--t-xs); }
+.tx-cifra b { display: block; color: var(--texto); font-size: var(--t-l); font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.tx-medidor { flex: 1 1 180px; height: 8px; border-radius: 4px; background: var(--neutro-suave); overflow: hidden; }
+.tx-medidor span { display: block; height: 100%; background: var(--tema); border-radius: 4px; }
+
+/* pastillas de estado: siempre con texto */
+.tx-pil { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--pildora); font-size: var(--t-xs); font-weight: 600; line-height: 1.35;
+    background: var(--neutro-suave); color: var(--texto-2); white-space: nowrap; }
+.tx-pil.tema { background: var(--tema-suave); color: var(--tema-tinta); }
+.tx-pil.ok { background: var(--ok-suave); color: var(--ok); }
+.tx-pil.aviso { background: var(--aviso-suave); color: var(--aviso); }
+.tx-pil.error { background: var(--error-suave); color: var(--error); }
+
+/* foto de perfil: círculo pequeño; con foto se puede ampliar (tx_ui.js) */
+.tx-avatar { --av: 36px; width: var(--av); height: var(--av); flex: none; border-radius: 50%; overflow: hidden; display: inline-grid; place-items: center;
+    background: var(--tema-suave); color: var(--tema-tinta); font-weight: 700; font-size: calc(var(--av) * .38); letter-spacing: 0; line-height: 1;
+    border: 0; padding: 0; text-transform: uppercase; user-select: none; font-family: var(--fuente); }
+.tx-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+button.tx-avatar[data-ampliar] { cursor: zoom-in; }
+button.tx-avatar[data-ampliar]:hover { box-shadow: 0 0 0 3px var(--tema-suave); }
+.tx-avatar.mediano { --av: 56px; }
+.tx-avatar.grande { --av: 112px; }
+dialog.tx-lightbox { border: 0; padding: 0; background: transparent; max-width: min(92vw, 520px); overflow: visible; }
+dialog.tx-lightbox::backdrop { background: rgba(20, 28, 24, .72); }
+dialog.tx-lightbox img { display: block; width: 100%; max-height: 78vh; object-fit: contain; border-radius: var(--radio); box-shadow: var(--sombra-alta); background: var(--fondo); }
+dialog.tx-lightbox figure { margin: 0; }
+dialog.tx-lightbox figcaption { color: #fff; text-align: center; margin-top: var(--e3); font-weight: 600; }
+dialog.tx-lightbox .cerrar { position: absolute; top: -14px; right: -14px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--fondo); color: var(--texto);
+    font-size: 20px; line-height: 1; box-shadow: var(--sombra); }
+dialog.tx-lightbox[open] img { animation: tx-ampliar .22s cubic-bezier(.2, .8, .2, 1); }
+@keyframes tx-ampliar { from { transform: scale(.92); opacity: .5; } to { transform: none; opacity: 1; } }
+
+/* campos dinámicos (productos, clientes, máquinas): "Campo:valor | Campo:valor" se muestra como pares ordenados.
+   tx_ui.js convierte el texto al vuelo; el servidor no cambia. */
+.tx-campos { display: inline-flex; flex-wrap: wrap; gap: 3px 14px; align-items: baseline; vertical-align: baseline; line-height: 1.35; text-align: left; }
+.tx-campo { display: inline-flex; gap: 5px; align-items: baseline; min-width: 0; }
+.tx-campo-e { color: var(--texto-2); font-size: var(--t-xs); font-weight: 500; white-space: nowrap; }
+.tx-campo-v { color: var(--texto); font-weight: 600; overflow-wrap: anywhere; }
+.tx-campo-v[data-vacio]::before { content: "—"; color: var(--texto-3); }
+.tx-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tx-campo.principal { flex-basis: 100%; }
+.tx-campo.principal .tx-campo-v { font-weight: 700; color: var(--tema-tinta); }
+.btn .tx-campo-v, .btn .tx-campo-e, .badge .tx-campo-v, .badge .tx-campo-e, .autocomplete-active .tx-campo-v, .autocomplete-active .tx-campo-e { color: inherit; }
+
+/* lista de productos/clientes/máquinas: código a la izquierda, campos en pares a la derecha */
+.tx-lista { border-radius: var(--radio-chico); overflow: hidden; }
+.tx-item { display: flex; gap: var(--e4); align-items: baseline; padding: 10px var(--e4); text-align: left; border-color: var(--linea-suave); }
+.tx-item-cod { flex: none; min-width: 5.5rem; display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+    color: var(--texto-2); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+.tx-item-datos { flex: 1; min-width: 0; }
+.list-group-item-action.tx-item:hover, .list-group-item-action.tx-item:focus { background: var(--tema-suave); }
+@media (max-width: 575px) { .tx-item { flex-direction: column; gap: 4px; } }
+
+/* tabla de registros con la misma escala tipográfica en todas las columnas */
+.tx-tabla { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--fondo); border-radius: var(--radio); box-shadow: var(--sombra); overflow: hidden; font-size: var(--t-s); }
+.tx-tabla th { text-align: left; font-size: var(--t-xs); font-weight: 600; color: var(--texto-2); background: var(--fondo-2); padding: 10px var(--e4); border-bottom: 1px solid var(--linea); white-space: nowrap; }
+.tx-tabla td { padding: 10px var(--e4); border-bottom: 1px solid var(--linea-suave); vertical-align: middle; color: var(--texto); }
+.tx-tabla tr:last-child td { border-bottom: 0; }
+.tx-tabla tbody tr:hover td { background: #fafbf9; }
+.tx-tabla tr.inactivo td { color: var(--texto-2); }
+.tx-tabla tr.inactivo .tx-avatar { filter: grayscale(1); opacity: .7; }
+.tx-tabla .persona { display: flex; align-items: center; gap: var(--e3); min-width: 0; }
+.tx-tabla .persona b { display: block; font-weight: 600; }
+.tx-tabla .persona small { display: block; color: var(--texto-2); font-size: var(--t-xs); }
+.tx-tabla .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tx-tabla .acciones { text-align: right; white-space: nowrap; }
+@media (max-width: 767px) {
+    /* en celular cada fila es un bloque con su etiqueta (data-t) */
+    .tx-tabla, .tx-tabla tbody, .tx-tabla tr, .tx-tabla td { display: block; width: 100%; }
+    .tx-tabla thead { display: none; }
+    .tx-tabla tr { padding: var(--e3) var(--e4); border-bottom: 1px solid var(--linea-suave); }
+    .tx-tabla tr:last-child { border-bottom: 0; }
+    .tx-tabla td { border: 0 !important; padding: 4px 0; display: flex; justify-content: space-between; align-items: center; gap: var(--e3); }
+    .tx-tabla td[data-t]::before { content: attr(data-t); color: var(--texto-2); font-size: var(--t-xs); }
+    .tx-tabla td:first-child { padding-bottom: var(--e2); }
+    .tx-tabla .num, .tx-tabla .acciones { text-align: left; }
+}
+
+/* selector de tema: cinco "billetes" */
+.tx-temas { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--e4); margin: 0; padding: 0; border: 0; }
+.tx-tema { position: relative; display: block; cursor: pointer; margin: 0; }
+.tx-tema input { position: absolute; opacity: 0; pointer-events: none; }
+.tx-tema .billete { display: block; height: 72px; border-radius: var(--radio-chico); background-color: var(--c); background-image: url("ui_guilloche.svg");
+    background-size: auto 220%; background-position: right -70px center; background-repeat: no-repeat; box-shadow: var(--sombra); transition: transform .15s ease, box-shadow .15s ease; }
+.tx-tema .nombre { display: flex; justify-content: space-between; align-items: baseline; gap: var(--e2); margin-top: 8px; font-weight: 600; color: var(--texto); font-size: var(--t-s); }
+.tx-tema .nombre small { color: var(--texto-2); font-weight: 500; font-size: var(--t-xs); }
+.tx-tema:hover .billete { transform: translateY(-2px); }
+.tx-tema input:checked + .billete { box-shadow: 0 0 0 3px var(--fondo), 0 0 0 5px var(--c), var(--sombra); }
+.tx-tema input:focus-visible + .billete { outline: 3px solid var(--c); outline-offset: 6px; }
+.tx-tema[data-tema="bosque"] { --c: #2f6b4a; }
+.tx-tema[data-tema="arrecife"] { --c: #2c5c8f; }
+.tx-tema[data-tema="manglar"] { --c: #9a5419; }
+.tx-tema[data-tema="volcan"] { --c: #a23b2c; }
+.tx-tema[data-tema="paramo"] { --c: #5e4785; }
+
+/* lista etiqueta/valor (ficha del usuario) */
+.tx-ficha { display: grid; grid-template-columns: max-content 1fr; gap: var(--e2) var(--e5); margin: 0; }
+.tx-ficha dt { color: var(--texto-2); font-weight: 500; font-size: var(--t-xs); padding-top: 2px; }
+.tx-ficha dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+/* formulario en rejilla */
+.tx-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--e4); }
+.tx-form .ancho { grid-column: 1 / -1; }
+.tx-ayuda { color: var(--texto-2); font-size: var(--t-xs); margin-top: 4px; }
+.tx-error { color: var(--error); font-size: var(--t-xs); margin-top: 4px; }
+.tx-interruptor { display: flex; align-items: flex-start; gap: var(--e3); padding: var(--e3) var(--e4); border: 1px solid var(--linea-suave); border-radius: var(--radio-chico); background: var(--fondo-2); cursor: pointer; margin: 0; }
+.tx-interruptor .form-check-input { margin: 2px 0 0; flex: none; width: 2.4em; height: 1.3em; float: none; }
+.tx-interruptor b { display: block; color: var(--texto); font-weight: 600; font-size: var(--t-s); }
+.tx-interruptor span { color: var(--texto-2); font-size: var(--t-xs); font-weight: 400; }
+.tx-interruptor.deshabilitado { opacity: .6; cursor: not-allowed; }
+
+/* aviso en línea */
+.tx-aviso { padding: var(--e3) var(--e4); border-radius: var(--radio-chico); background: var(--tema-suave); color: var(--tema-tinta); font-size: var(--t-s); }
+.tx-aviso.error { background: var(--error-suave); color: var(--error); }
+.tx-aviso.ok { background: var(--ok-suave); color: var(--ok); }

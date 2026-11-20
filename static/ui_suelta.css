@@ -1,0 +1,47 @@
+/* Páginas sueltas de TX que no usan base_layout (bienvenida, política de privacidad).
+   Banda del tema con filigrana arriba y una hoja de papel centrada. Solo tokens de ui_tokens.css. */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: var(--fondo-2); color: var(--texto); font: var(--t-s)/1.55 var(--fuente);
+    -webkit-font-smoothing: antialiased; }
+a { color: var(--tema); text-underline-offset: 3px; }
+a:hover { color: var(--tema-fuerte); }
+:focus-visible { outline: 3px solid rgba(var(--tema-rgb), .45); outline-offset: 2px; }
+::selection { background: var(--tema-suave); color: var(--tema-tinta); }
+
+.suelta-banda { background-color: var(--tema); background-image: url("ui_guilloche.svg"); background-repeat: no-repeat;
+    background-position: right -80px center; background-size: auto 190%; color: #fff; padding: 28px 24px 96px; }
+.suelta-banda .marca { max-width: 720px; margin: 0 auto; font-weight: 800; letter-spacing: .01em; font-size: 1.05rem; }
+.suelta-banda .marca small { display: block; font-weight: 500; opacity: .8; font-size: var(--t-xs); letter-spacing: 0; }
+
+.suelta-hoja { max-width: 720px; margin: -72px auto 48px; background: var(--fondo); border-radius: var(--radio); box-shadow: var(--sombra);
+    padding: clamp(24px, 5vw, 44px); }
+.suelta-hoja h1 { font-size: var(--t-xl); font-weight: 800; letter-spacing: -.02em; color: var(--tema-tinta); margin: 0 0 var(--e2); line-height: 1.2; }
+.suelta-hoja h2 { font-size: var(--t-m); font-weight: 700; margin: var(--e6) 0 var(--e2); color: var(--texto); }
+.suelta-hoja p, .suelta-hoja li { max-width: 68ch; }
+.suelta-hoja .intro { color: var(--texto-2); margin: 0 0 var(--e5); }
+.suelta-hoja ul { padding-left: 1.2em; }
+.suelta-hoja li { margin-bottom: 4px; }
+
+.campo { margin-bottom: var(--e5); }
+.campo label, .campo .etiqueta { display: block; font-weight: 600; margin-bottom: 6px; }
+.campo input[type=date] { width: 100%; max-width: 260px; min-height: var(--toque); padding: 8px 14px; border: 1px solid var(--linea);
+    border-radius: var(--radio-chico); font: inherit; color: var(--texto); background: var(--fondo); }
+.campo input[type=date]:focus { border-color: var(--tema); outline: 3px solid rgba(var(--tema-rgb), .25); }
+.campo .ayuda { color: var(--texto-2); font-size: var(--t-xs); margin-top: 6px; }
+.dato-fijo { font-weight: 600; }
+
+.aceptar { display: flex; gap: var(--e3); align-items: flex-start; padding: var(--e4); border: 1px solid var(--linea); border-radius: var(--radio-chico);
+    background: var(--fondo-2); cursor: pointer; }
+.aceptar input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--tema); flex: none; }
+
+.error { margin: 0 0 var(--e4); padding: var(--e3) var(--e4); border-radius: var(--radio-chico); background: var(--error-suave); color: var(--error); font-weight: 500; }
+
+.botones { display: flex; flex-wrap: wrap; gap: var(--e3); align-items: center; margin-top: var(--e5); }
+.boton { display: inline-flex; align-items: center; justify-content: center; min-height: var(--toque); padding: 0 var(--e5); border-radius: var(--pildora);
+    border: 1px solid var(--tema); background: var(--tema); color: #fff; font: 600 var(--t-s) var(--fuente); cursor: pointer; text-decoration: none; }
+.boton:hover { background: var(--tema-fuerte); border-color: var(--tema-fuerte); color: #fff; text-decoration: none; }
+.boton.sec { background: var(--fondo); color: var(--tema); border-color: var(--linea); }
+.boton.sec:hover { background: var(--fondo-2); color: var(--tema-fuerte); }
+
+.borrador { margin: 0 0 var(--e5); padding: var(--e3) var(--e4); border-radius: var(--radio-chico); background: var(--aviso-suave); color: var(--aviso); font-size: var(--t-xs); }
+.version { color: var(--texto-2); font-size: var(--t-xs); }

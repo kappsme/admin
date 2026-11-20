@@ -87,7 +87,8 @@ function tablaDeUsuarios(kappIDX) {
                             nombre: usuario['name'] + ' ' + usuario['lastname'],
                             email: usuario['email'],
                             nivel: niveles[usuario['nivel']] || usuario['nivel'],
-                            estado: (estados[usuario['estado']] || usuario['estado']) + (usuario['bloqueo'] == 1 ? ' · Bloqueado' : ''),
+                            estado: (estados[usuario['estado']] || usuario['estado']) + (usuario['bloqueo'] == 1 ? ' · Bloqueado' : '')
+                                + (usuario['estado'] == 1 && usuario['registro_completo'] != 1 ? ' · Registro pendiente' : ''),
                         };
                         for (const column of ['id', 'username', 'nombre', 'email', 'nivel', 'estado', 'ultimo_request', 'editar']) {
                             const cell = document.createElement("td");
@@ -102,6 +103,33 @@ function tablaDeUsuarios(kappIDX) {
                                 btn.textContent = "Editar";
                                 btn.onclick = function () { editarUsuario(kappIDX, usuario); };
                                 cell.appendChild(btn);
+                            }
+                            else if (column == 'nombre') {
+                                // foto en círculo (se amplía con tx_ui.js) o iniciales
+                                const caja = document.createElement('div');
+                                caja.className = 'd-flex align-items-center gap-2';
+                                let av;
+                                if (usuario['foto_v'] > 0) {
+                                    const url = $SCRIPT_ROOT + '/foto/' + usuario['id'] + '?v=' + usuario['foto_v'];
+                                    av = document.createElement('button');
+                                    av.type = 'button';
+                                    av.setAttribute('data-ampliar', url);
+                                    av.setAttribute('data-nombre', textos.nombre);
+                                    av.setAttribute('aria-label', 'Ver foto de ' + textos.nombre);
+                                    const img = document.createElement('img');
+                                    img.src = url; img.alt = ''; img.loading = 'lazy';
+                                    av.appendChild(img);
+                                } else {
+                                    av = document.createElement('span');
+                                    av.textContent = ((usuario['name'] || '?').charAt(0) + (usuario['lastname'] || '').charAt(0)).toUpperCase();
+                                }
+                                av.classList.add('tx-avatar');
+                                caja.appendChild(av);
+                                const n = document.createElement('span');
+                                n.textContent = textos.nombre;
+                                if (usuario['estado'] == 0) n.classList.add('text-decoration-line-through');
+                                caja.appendChild(n);
+                                cell.appendChild(caja);
                             }
                             else  {
                                 var cellText = document.createTextNode(textos[column]);
@@ -149,6 +177,12 @@ function editarUsuario(kappIDX, usuario) {
     document.getElementById('usr-id').value = usuario['id'];
     for (const campo of camposUsuario) document.getElementById('usr-' + campo).value = usuario[campo];
     document.getElementById('usr-bloqueo').checked = usuario['bloqueo'] == 1;
+    // permiso para entrar a TX con Google (además la KAPP debe tener encendido el parámetro 'Login con Google')
+    document.getElementById('usr-google').checked = usuario['google_login'] != 0;
+    document.getElementById('usr-google-estado').textContent = usuario['google_vinculado'] == 1 ? 'Cuenta vinculada' : 'Sin vincular';
+    document.getElementById('usr-nacimiento').value = usuario['fecha_nacimiento'] || '';
+    document.getElementById('usr-registro').textContent = usuario['registro_completo'] == 1
+        ? 'Registro completo (edad y privacidad)' : 'Pendiente: la persona lo completa al entrar';
     document.getElementById('usr-msg').textContent = '';
     document.getElementById('usr-nuevo-form').hidden = true;
     form.hidden = false;
@@ -157,7 +191,12 @@ function editarUsuario(kappIDX, usuario) {
     document.getElementById('usr-cancelar').onclick = function () { form.hidden = true; };
     form.onsubmit = function (e) {
         e.preventDefault();
-        const pl = { accion: '11', kapp_id: kappIDX, usuarioId: usuario['id'], bloqueo: document.getElementById('usr-bloqueo').checked ? 1 : 0 };
+        const pl = {
+            accion: '11', kapp_id: kappIDX, usuarioId: usuario['id'],
+            bloqueo: document.getElementById('usr-bloqueo').checked ? 1 : 0,
+            google_login: document.getElementById('usr-google').checked ? 1 : 0,
+            fecha_nacimiento: document.getElementById('usr-nacimiento').value
+        };
         for (const campo of camposUsuario) pl[campo] = document.getElementById('usr-' + campo).value;
         fetch($SCRIPT_ROOT + '/crud_kapp', {
             method: "POST",
@@ -199,6 +238,7 @@ document.getElementById('usr-nuevo-form').onsubmit = function (e) {
     const btn = document.getElementById('usr-nuevo-guardar'), msg = document.getElementById('usr-nuevo-msg');
     const pl = { accion: '12', kapp_id: kappId };
     for (const campo of ['name', 'lastname', 'email', 'nivel']) pl[campo] = document.getElementById('usr-nuevo-' + campo).value;
+    pl['google_login'] = document.getElementById('usr-nuevo-google').checked ? 1 : 0;
     btn.disabled = true; // el envío del correo tarda unos segundos: evita crear el usuario dos veces
     msg.textContent = '';
     fetch($SCRIPT_ROOT + '/crud_kapp', {

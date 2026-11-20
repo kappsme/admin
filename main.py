@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, session, g
+from flask import Flask, render_template, request, session, g, redirect, url_for, make_response, abort
+from datetime import datetime, timedelta, timezone
 import os
 import secrets
 from urllib.parse import urlsplit
@@ -48,6 +49,99 @@ kapps_admin.secret_key = os.getenv('APP_SECRET_KEY')
 @kapps_admin.route("/", methods=["GET", "POST"])
 def login():
     return klogin.klogin(kapps_admin.config["application_id"])
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# EDAD Y PRIVACIDAD (igual que TX, ver tx/perfil.py). POLITICA_VERSION debe ser la MISMA de tx/perfil.py:
+# la política se publica en TX (/privacidad) y la aceptación vale para las dos apps.
+# ---------------------------------------------------------------------------------------------------------------
+POLITICA_VERSION = "2026-11-19"
+EDAD_MINIMA = 18
+TX_PRIVACIDAD_URL = (os.getenv("TX_BASE_URL") or "https://kapps.me/tx").rstrip("/") + "/privacidad"
+TEMAS = ("bosque", "arrecife", "manglar", "volcan", "paramo")
+
+
+def _hoy():
+    return datetime.now(timezone(timedelta(hours=-6))).date()  # Costa Rica, sin horario de verano
+
+
+def _edad(nacimiento):
+    hoy = _hoy()
+    return hoy.year - nacimiento.year - ((hoy.month, hoy.day) < (nacimiento.month, nacimiento.day))
+
+
+def _leer_fecha(texto):
+    try:
+        f = datetime.strptime((texto or "").strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+    return f if 1900 <= f.year and f <= _hoy() else None
+
+
+def _cargar_perfil(id_cuenta):
+    conn = DBConn()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("select tema, fecha_nacimiento, politica_version from kapps_db.accounts where id=%s", [id_cuenta])
+    fila = cursor.fetchone() or {}
+    cursor.close()
+    conn.close()
+    nacimiento = fila.get("fecha_nacimiento")
+    session["tema"] = fila.get("tema") if fila.get("tema") in TEMAS else "bosque"
+    session["pendiente_legal"] = (nacimiento is None or _edad(nacimiento) < EDAD_MINIMA
+                                  or fila.get("politica_version") != POLITICA_VERSION)
+
+
+@kapps_admin.route("/bienvenida", methods=["GET", "POST"])
+def bienvenida():
+    conn = DBConn()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("select name, fecha_nacimiento, politica_version from kapps_db.accounts where id=%s", [session["id"]])
+    cuenta = cursor.fetchone() or {}
+    error = ""
+    if request.method == "POST":
+        nacimiento = cuenta.get("fecha_nacimiento") or _leer_fecha(request.form.get("fecha_nacimiento"))
+        if nacimiento is None:
+            error = "Escriba una fecha de nacimiento válida."
+        elif _edad(nacimiento) < EDAD_MINIMA:
+            cursor.close()
+            conn.close()
+            return klogin.klogout(msg="<b>No es posible ingresar.</b><br>KAPPS solo puede usarse por personas mayores de 18 años.")
+        elif request.form.get("acepto") != "1":
+            error = "Para continuar debe aceptar la política de privacidad."
+        else:
+            cursor.execute(
+                "update kapps_db.accounts set fecha_nacimiento=%s, politica_version=%s, politica_fecha=%s where id=%s",
+                [nacimiento, POLITICA_VERSION, datetime.now(timezone(timedelta(hours=-6))).replace(tzinfo=None), session["id"]],
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            session["pendiente_legal"] = False
+            return redirect(url_for("home"))
+    cursor.close()
+    conn.close()
+    return render_template(
+        "bienvenida.html", nombre=cuenta.get("name") or "", nacimiento=cuenta.get("fecha_nacimiento"),
+        politica_anterior=cuenta.get("politica_version"), version=POLITICA_VERSION, error=error,
+        fecha_maxima=_hoy().isoformat(), privacidad_url=TX_PRIVACIDAD_URL,
+    )
+
+
+@kapps_admin.route("/foto/<int:id_cuenta>")
+def foto_usuario(id_cuenta):
+    """Foto de perfil de cualquier usuario (la app Admin ve todas las KAPPS)."""
+    conn = DBConn()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("select mime, datos from kapps_db.accounts_foto where id_account=%s", [id_cuenta])
+    fila = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if not fila:
+        abort(404)
+    resp = make_response(bytes(fila["datos"]))
+    resp.headers["Content-Type"] = fila["mime"]
+    resp.headers["Cache-Control"] = "private, max-age=2592000"
+    return resp
 
 def datos_kapp(id_kapp=None):
     mysql=DBConn()
@@ -383,11 +477,17 @@ def crud_kapp():
             """SELECT a.id, username, name, lastname, email, ifnull(phone1,'') phone1, ifnull(phone2,'') phone2
                     , nivel, estado, bloqueo, round(vigencia/60) vigencia, date_format(fecha_creacion,'%Y-%m-%d') fecha_creacion
                     , ifnull(al.ultimo_request,'') ultimo_request
+                    , google_login, google_sub is not null google_vinculado
+                    , ifnull(date_format(fecha_nacimiento,'%Y-%m-%d'),'') fecha_nacimiento
+                    , (fecha_nacimiento is not null and ifnull(politica_version,'')=%s) registro_completo
+                    , ifnull(unix_timestamp(f.actualizado),0) foto_v
                 FROM kapps_db.accounts a
                     LEFT JOIN kapps_db.accounts_log al on al.id_account=a.id
+                    LEFT JOIN kapps_db.accounts_foto f on f.id_account=a.id
                 where kapp_id =%s
                 order by (estado=1) desc, estado desc, username""",
             (
+                POLITICA_VERSION,
                 request.json["kapp_id"],
             ),
         )
@@ -402,12 +502,18 @@ def crud_kapp():
         textos = {c: str(u.get(c) or "").strip() for c in limites}
         try:
             nivel, estado, bloqueo, vigencia = int(u["nivel"]), int(u["estado"]), int(u["bloqueo"]), int(u["vigencia"])
+            google_login = 0 if str(u.get("google_login", 1)) == "0" else 1  # puede ingresar a TX con Google
         except (KeyError, TypeError, ValueError):
             nivel = None
         cursor.execute("select estado from kapps_db.accounts where id=%s and kapp_id=%s", (u.get("usuarioId"), u.get("kapp_id")))
         actual = cursor.fetchone()
+        # fecha de nacimiento: la registra el usuario; aquí solo se corrige. Vacía = se le volverá a pedir al entrar.
+        texto_nac = str(u.get("fecha_nacimiento") or "").strip()
+        nacimiento = _leer_fecha(texto_nac) if texto_nac else None
         if not actual:
             result, reason = 'error', 'Usuario no encontrado en esta KAPP'
+        elif texto_nac and (nacimiento is None or _edad(nacimiento) < EDAD_MINIMA):
+            result, reason = 'error', 'Fecha de nacimiento inválida: debe ser de una persona mayor de 18 años.'
         elif (nivel not in (1, 2, 3) or estado not in (0, 1, 2) or bloqueo not in (0, 1) or not 1 <= vigencia <= 100000
                 or not textos["name"] or not textos["lastname"] or "@" not in textos["email"]
                 or any(len(textos[c]) > limites[c] for c in limites)):
@@ -416,13 +522,22 @@ def crud_kapp():
             # solo al pasar a Activo: editar a quien ya estaba activo no se bloquea aunque la KAPP esté al tope
             result, reason = 'error', 'La KAPP ya usa todas sus licencias. Desactive otro usuario o aumente las licencias.'
         else:
+            # al cambiar el correo o quitar el permiso se borra la cuenta de Google vinculada
+            cursor.execute(
+                """update kapps_db.accounts set google_sub=NULL
+                    where id=%s and kapp_id=%s and (lower(email)<>lower(%s) or %s=0)""",
+                (u.get("usuarioId"), u.get("kapp_id"), textos["email"], google_login),
+            )
             cursor.execute(
                 """update kapps_db.accounts set name=%s, lastname=%s, email=%s, phone1=%s, phone2=%s
-                        , nivel=%s, estado=%s, bloqueo=%s, vigencia=%s
+                        , nivel=%s, estado=%s, bloqueo=%s, vigencia=%s, google_login=%s
                     where id=%s and kapp_id=%s""",
                 (textos["name"], textos["lastname"], textos["email"], textos["phone1"] or None, textos["phone2"] or None,
-                 nivel, estado, bloqueo, vigencia * 60, u.get("usuarioId"), u.get("kapp_id")),
+                 nivel, estado, bloqueo, vigencia * 60, google_login, u.get("usuarioId"), u.get("kapp_id")),
             )
+            if "fecha_nacimiento" in u:
+                cursor.execute("update kapps_db.accounts set fecha_nacimiento=%s where id=%s and kapp_id=%s",
+                               (nacimiento, u.get("usuarioId"), u.get("kapp_id")))
             result, reason, data = 'success', None, stats_usuarios(cursor, u.get("kapp_id"))
     elif accion == "12":  # AGREGAR USUARIO A UNA KAPP + correo de bienvenida con su acceso
         nuevo, error = nuevo_admin.validar_usuario(request.json)
@@ -437,10 +552,10 @@ def crud_kapp():
             password = nuevo_admin.generar_password()
             # mismo cifrado que usa TX; password_reset=1 marca la contraseña como temporal
             cursor.execute(
-                """insert into kapps_db.accounts (username, email, name, lastname, kapp_id, nivel, estado, bloqueo, vigencia, password_reset, password2)
-                   values (%s,%s,%s,%s,%s,%s,1,0,1200,1,aes_encrypt(%s,UNHEX(SHA2(%s,512))))""",
+                """insert into kapps_db.accounts (username, email, name, lastname, kapp_id, nivel, estado, bloqueo, vigencia, password_reset, google_login, password2)
+                   values (%s,%s,%s,%s,%s,%s,1,0,1200,1,%s,aes_encrypt(%s,UNHEX(SHA2(%s,512))))""",
                 (username, nuevo["email"], nuevo["name"].lower(), nuevo["lastname"].lower(), request.json["kapp_id"],
-                 nuevo["nivel"], password, os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN')))
+                 nuevo["nivel"], 0 if str(request.json.get("google_login", 1)) == "0" else 1, password, os.getenv('MYSQL_PASSWORD_ENCRYPT_CHAIN')))
             try:
                 nuevo_admin.enviar_correo_acceso(nuevo["email"], nuevo["name"].title(), kapp["name"], kapp["clave"],
                                                  username, password, es_admin=False)
@@ -613,6 +728,11 @@ def before_request_func():
                     )
                     mysqlConn.commit()
                     cursor.close()
+                    # EDAD Y PRIVACIDAD: sin fecha de nacimiento (18+) o sin aceptar la política vigente, solo /bienvenida
+                    if "pendiente_legal" not in session:
+                        _cargar_perfil(session["id"])
+                    if session.get("pendiente_legal") and request.endpoint not in ("bienvenida", "static", "logout"):
+                        return redirect(url_for("bienvenida"))
                 elif (
                     session["token"] == resultado["token"]
                     and resultado["duracion_session"] > resultado["vigencia"]

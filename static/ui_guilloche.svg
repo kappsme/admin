@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="720" height="180" viewBox="0 0 720 180" fill="none" stroke="#ffffff" stroke-width=".7">
+  <!-- Filigrana de la banda superior (estilo guilloché de billete). Trazo blanco: se pinta sobre el color del tema. -->
+  <defs>
+    <path id="onda" d="M-40 0 q 20 -8 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0 t 40 0"/>
+    <ellipse id="petalo" cx="0" cy="0" rx="78" ry="24"/>
+    <ellipse id="petalo2" cx="0" cy="0" rx="46" ry="12"/>
+  </defs>
+  <g stroke-opacity=".13">
+    <use xlink:href="#onda" y="14"/><use xlink:href="#onda" x="20" y="22"/>
+    <use xlink:href="#onda" y="30"/><use xlink:href="#onda" x="20" y="38"/>
+    <use xlink:href="#onda" y="46"/><use xlink:href="#onda" x="20" y="54"/>
+    <use xlink:href="#onda" y="62"/><use xlink:href="#onda" x="20" y="70"/>
+    <use xlink:href="#onda" y="78"/><use xlink:href="#onda" x="20" y="86"/>
+    <use xlink:href="#onda" y="94"/><use xlink:href="#onda" x="20" y="102"/>
+    <use xlink:href="#onda" y="110"/><use xlink:href="#onda" x="20" y="118"/>
+    <use xlink:href="#onda" y="126"/><use xlink:href="#onda" x="20" y="134"/>
+    <use xlink:href="#onda" y="142"/><use xlink:href="#onda" x="20" y="150"/>
+    <use xlink:href="#onda" y="158"/><use xlink:href="#onda" x="20" y="166"/>
+  </g>
+  <g transform="translate(600 90)" stroke-opacity=".26">
+    <use xlink:href="#petalo"/><use xlink:href="#petalo" transform="rotate(15)"/><use xlink:href="#petalo" transform="rotate(30)"/>
+    <use xlink:href="#petalo" transform="rotate(45)"/><use xlink:href="#petalo" transform="rotate(60)"/><use xlink:href="#petalo" transform="rotate(75)"/>
+    <use xlink:href="#petalo" transform="rotate(90)"/><use xlink:href="#petalo" transform="rotate(105)"/><use xlink:href="#petalo" transform="rotate(120)"/>
+    <use xlink:href="#petalo" transform="rotate(135)"/><use xlink:href="#petalo" transform="rotate(150)"/><use xlink:href="#petalo" transform="rotate(165)"/>
+    <use xlink:href="#petalo2" transform="rotate(7.5)"/><use xlink:href="#petalo2" transform="rotate(37.5)"/><use xlink:href="#petalo2" transform="rotate(67.5)"/>
+    <use xlink:href="#petalo2" transform="rotate(97.5)"/><use xlink:href="#petalo2" transform="rotate(127.5)"/><use xlink:href="#petalo2" transform="rotate(157.5)"/>
+    <circle r="84"/><circle r="88" stroke-dasharray="2 3"/><circle r="20"/>
+  </g>
+</svg>

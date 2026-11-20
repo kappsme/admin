@@ -1,0 +1,52 @@
+/* Tokens de diseño compartidos por TODOS los módulos de TX (Taller, Tienda, Crédito, Inventario, Despacho, Barberías)
+   y por la app Admin (copia en ../admin/static/ui_tokens.css: mantener iguales).
+   Mundo visual "billetes de colones": papel claro, tinta verde-negra y una banda del color del tema con filigrana
+   (static/ui_guilloche.svg). Cada usuario elige uno de 5 temas: <html data-tema="bosque|arrecife|manglar|volcan|paramo">.
+   Los componentes SOLO usan estas variables. Guía: docs/diseno.md */
+:root {
+  --fondo: #ffffff;          /* papel: tarjetas, tablas, ventanas */
+  --fondo-2: #f3f5f1;        /* fondo de la página */
+  --texto: #1c2722;
+  --texto-2: #56645c;        /* secundario, 6.1:1 sobre blanco */
+  --texto-3: #7a877f;        /* solo detalles grandes o no esenciales */
+  --linea: #d3dbd5;
+  --linea-suave: #e6ebe7;
+  --neutro-suave: #eaeeea;
+
+  /* tema por defecto: Bosque */
+  --tema: #2f6b4a;
+  --tema-fuerte: #234f37;
+  --tema-suave: #e3efe7;
+  --tema-tinta: #1e4a33;     /* texto sobre --tema-suave */
+  --tema-rgb: 47, 107, 74;   /* el mismo --tema en r,g,b (Bootstrap lo usa con opacidad) */
+
+  /* la acción sigue al tema */
+  --accion: var(--tema);
+  --accion-fuerte: var(--tema-fuerte);
+  --accion-suave: var(--tema-suave);
+
+  /* estados: fijos en todos los temas, siempre con texto, nunca solo color */
+  --ok: #24704a;
+  --ok-suave: #e2f1e8;
+  --aviso: #8c5300;
+  --aviso-suave: #fbefdc;
+  --error: #b3261e;
+  --error-suave: #fbe9e7;
+
+  --radio: 14px;
+  --radio-chico: 10px;
+  --pildora: 980px;
+  --sombra: 0 1px 2px rgba(28, 39, 34, .05), 0 6px 18px rgba(28, 39, 34, .06);
+  --sombra-alta: 0 18px 48px rgba(28, 39, 34, .22);
+  --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px; --e7: 48px;
+  --fuente: "Libre Franklin", -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --t-xs: .8125rem; --t-s: .9375rem; --t-m: 1.0625rem; --t-l: 1.3125rem; --t-xl: 1.75rem; --t-xxl: 2.25rem;
+  --toque: 44px;             /* tamaño mínimo de cualquier control táctil */
+  --barra: 76px;             /* alto de la barra inferior fija (Barberías) */
+}
+
+/* LOS 5 TEMAS. Texto blanco sobre --tema cumple AA en todos (>= 4.8:1). */
+[data-tema="arrecife"] { --tema: #2c5c8f; --tema-fuerte: #21466e; --tema-suave: #e3ebf5; --tema-tinta: #1d3f63; --tema-rgb: 44, 92, 143; }
+[data-tema="manglar"]  { --tema: #9a5419; --tema-fuerte: #774012; --tema-suave: #f6eadd; --tema-tinta: #6a3a10; --tema-rgb: 154, 84, 25; }
+[data-tema="volcan"]   { --tema: #a23b2c; --tema-fuerte: #7f2e22; --tema-suave: #f6e4e1; --tema-tinta: #6f271d; --tema-rgb: 162, 59, 44; }
+[data-tema="paramo"]   { --tema: #5e4785; --tema-fuerte: #483667; --tema-suave: #ece7f3; --tema-tinta: #3f2f5c; --tema-rgb: 94, 71, 133; }
