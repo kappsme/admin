@@ -78,6 +78,18 @@ def _leer_fecha(texto):
     return f if 1900 <= f.year and f <= _hoy() else None
 
 
+def _correo_google_en_uso(cursor, email, excluir_id=0):
+    """Clave de la KAPP donde OTRO usuario ya tiene ese correo con 'Puede entrar con Google', o None.
+    Un correo de Google pertenece a un solo usuario de KAPPS (igual que tx/klogin.correo_google_en_uso)."""
+    cursor.execute(
+        """select k.clave from kapps_db.accounts a left join kapps_db.kapps k on k.id=a.kapp_id
+            where lower(a.email)=lower(%s) and a.google_login=1 and a.kapp_id<>0 and a.id<>%s limit 1""",
+        [(email or "").strip(), int(excluir_id or 0)],
+    )
+    fila = cursor.fetchone()
+    return (fila["clave"] or "?") if fila else None
+
+
 def _cargar_perfil(id_cuenta):
     conn = DBConn()
     cursor = conn.cursor(dictionary=True)
@@ -514,6 +526,10 @@ def crud_kapp():
             result, reason = 'error', 'Usuario no encontrado en esta KAPP'
         elif texto_nac and (nacimiento is None or _edad(nacimiento) < EDAD_MINIMA):
             result, reason = 'error', 'Fecha de nacimiento inválida: debe ser de una persona mayor de 18 años.'
+        elif nivel is not None and google_login and _correo_google_en_uso(cursor, textos["email"], u.get("usuarioId")):
+            result, reason = 'error', ('El correo ya entra con Google en otro usuario (KAPP %s). Un correo de Google solo puede '
+                                       'pertenecer a un usuario: desmarque «Ingreso con Google» o use otro correo.'
+                                       % _correo_google_en_uso(cursor, textos["email"], u.get("usuarioId")))
         elif (nivel not in (1, 2, 3) or estado not in (0, 1, 2) or bloqueo not in (0, 1) or not 1 <= vigencia <= 100000
                 or not textos["name"] or not textos["lastname"] or "@" not in textos["email"]
                 or any(len(textos[c]) > limites[c] for c in limites)):
@@ -547,6 +563,9 @@ def crud_kapp():
             result, reason = 'error', error or 'KAPP no encontrada'
         elif licencias_libres(cursor, request.json["kapp_id"]) < 1:
             result, reason = 'error', 'La KAPP ya usa todas sus licencias. Desactive otro usuario o aumente las licencias.'
+        elif str(request.json.get("google_login", 1)) != "0" and _correo_google_en_uso(cursor, nuevo["email"]):
+            result, reason = 'error', ('El correo ya entra con Google en otro usuario (KAPP %s). Desmarque «Puede entrar con Google» '
+                                       'o use otro correo.' % _correo_google_en_uso(cursor, nuevo["email"]))
         else:
             username = nuevo_admin.generar_username(cursor, nuevo["name"], nuevo["lastname"])
             password = nuevo_admin.generar_password()

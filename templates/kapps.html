@@ -57,6 +57,7 @@
 			</td>
 			{% endfor %}
 		</tr>
+		{% if not detalle %}
 		<!-- FILTROS POR CAMPO (solo en el navegador, no consultan al servidor) -->
 		<tr id="kapps-filtros" class="kapps-filtros">
 			{% for col in columnas if col not in ['ULTIMOPAGO_MES','ULTIMOPAGO_YEAR']: %}
@@ -82,6 +83,7 @@
 			{% endfor %}
 			<td class="p-1"><button type="button" id="kapps-filtros-limpiar" class="btn btn-secondary btn-sm">Limpiar</button></td>
 		</tr>
+		{% endif %}
 	</thead>
 	<tbody>
 		<!--Ciclo KAPPs Activas/Suspendidas-->
@@ -219,10 +221,12 @@
 		{% endfor %}
 	</tbody>
 </table>
+{% if not detalle %}
 <div class="pager-bar">
 	<p id="kapps-filtros-contador" class="text-muted small m-0" aria-live="polite"></p>
 	<div id="kapps-pager"></div>
 </div>
+{% endif %}
 
 <script nonce="{{ csp_nonce }}">
 	// Filtros por campo (AND) + paginación en el navegador
