@@ -7,6 +7,7 @@ import klogin
 import nuevo_admin
 from dotenv import load_dotenv
 import mysql.connector
+import esquemas
 import json
 
 # ENV Variables
@@ -30,7 +31,8 @@ kapps_admin.config.update(
 
 # CONEXION A BASE DE DATOS
 def DBConn():
-    Conn = mysql.connector.connect(
+    # esquemas.conectar traduce kapps_db. al esquema del ambiente (MYSQL_DB_KAPPS); copia de tx/esquemas.py
+    Conn = esquemas.conectar(
         user= os.getenv('MYSQL_USER'),
         password= os.getenv('MYSQL_PASSWORD'),
         host= os.getenv('MYSQL_HOST'),
@@ -691,6 +693,13 @@ def csp_nonce():
 @kapps_admin.context_processor
 def inject_csp_nonce():
     return {"csp_nonce": getattr(g, "csp_nonce", "")}
+
+
+@kapps_admin.context_processor
+def tx_ambiente_actual():
+    """Ambiente para la banda de aviso (_banda_ambiente.html, igual que en TX): pruebas si los esquemas no son tx y kapps_db."""
+    return {"tx_es_produccion": esquemas.ES_PRODUCCION, "tx_ambiente": esquemas.AMBIENTE,
+            "tx_esquema": esquemas.ESQUEMA_DATOS + " · " + esquemas.KAPPS_DB}
 
 
 @kapps_admin.after_request

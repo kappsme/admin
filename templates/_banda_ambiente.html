@@ -1,0 +1,39 @@
+{#- Aviso de ambiente de pruebas (esquemas distintos de tx y kapps_db, ver esquemas.py). Variables del context processor tx_ambiente_actual.
+    Copia idéntica en tx/templates y admin/templates: mantener iguales.
+    Uso: {% include '_banda_ambiente.html' %} justo después de <body>. En producción no muestra nada.
+    Es fija arriba (algunas pantallas centran el body con grid/flex) y el body reserva su alto con un borde. -#}
+{% if not tx_es_produccion %}
+<style>
+  :root { --tx-banda-h: 28px; }
+  body { box-sizing: border-box; border-top: var(--tx-banda-h) solid transparent; }
+  .tx-banda-ambiente {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1090;
+    height: var(--tx-banda-h); box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center; gap: .45rem;
+    padding: 0 12px; margin: 0;
+    white-space: nowrap; overflow: hidden;
+    font: 600 .78rem/1 var(--fuente, "Libre Franklin", system-ui, sans-serif); letter-spacing: .02em;
+    color: var(--aviso, #8c5300);
+    background: repeating-linear-gradient(-45deg, var(--aviso-suave, #fbefdc) 0 14px, color-mix(in srgb, var(--aviso, #8c5300) 9%, var(--aviso-suave, #fbefdc)) 14px 28px);
+    border-bottom: 2px solid var(--aviso, #8c5300);
+  }
+  .tx-banda-ambiente strong { text-transform: uppercase; letter-spacing: .08em; }
+  .tx-banda-ambiente code {
+    font: 600 .76rem ui-monospace, SFMono-Regular, Consolas, monospace; color: inherit;
+    background: var(--fondo, #fff); padding: 1px .35rem; border-radius: 4px;
+  }
+  .tx-banda-ambiente .extra { overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 520px) { .tx-banda-ambiente .extra { display: none; } }
+  /* las bandas pegajosas de TX (ui_skin.css) y Barberías (brb.css) se quedan debajo de esta */
+  .container-fluid.border > .row:first-child, .adm-tope { top: var(--tx-banda-h) !important; }
+  @media (min-width: 960px) {
+    .adm-nav { top: calc(72px + var(--tx-banda-h)); height: calc(100vh - 72px - var(--tx-banda-h)); }
+  }
+  @media print { .tx-banda-ambiente { display: none; } body { border-top: 0; } }
+</style>
+<div class="tx-banda-ambiente" role="status">
+  <strong>Ambiente de pruebas</strong>
+  <code>{{ tx_esquema }}</code>
+  <span class="extra">· Los datos no son de producción</span>
+</div>
+{% endif %}

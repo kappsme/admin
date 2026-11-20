@@ -11,6 +11,7 @@
 </head>
 
 <body>
+{% include '_banda_ambiente.html' %}
 	<main class="stage">
 
 		<section class="scene" aria-hidden="true">
@@ -25,6 +26,12 @@
 					name="ingreso" novalidate>
 					<div class="brand"><b>KAPPS.me</b><span>Admin</span></div>
 					<p class="subtitle">Acceso para administradores.</p>
+					{% if not tx_es_produccion %}
+					<div role="note" style="margin:0 0 16px;padding:10px 12px;border:1px solid var(--aviso, #8c5300);border-radius:8px;background:var(--aviso-suave, #fbefdc);color:var(--aviso, #8c5300);font-size:.9rem;line-height:1.4">
+						<strong>Ambiente de pruebas.</strong> Bases <code style="color:inherit;font-weight:600">{{ tx_esquema }}</code>, no producción.
+						Lo que registre aquí no afecta los datos reales.
+					</div>
+					{% endif %}
 
 					<div class="wrap-input100 validate-input" data-validate="No debe estar vacío">
 						<input class="input100" type="text" name="username" id="username" autocomplete="username">
