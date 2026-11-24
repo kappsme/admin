@@ -1,0 +1,33 @@
+{% extends 'base_layout.html' %}
+{% import '_tickets_panel.html' as tk %}
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div>
+            <p class="mb-1"><a href="{{ url_for('home') }}">Inicio</a> / Tickets</p>
+            <h1 class="h3 mb-0">Tickets de soporte</h1>
+        </div>
+        <form class="d-flex flex-wrap gap-2 align-items-end" method="get">
+            <div><label class="form-label small mb-0" for="f-estado">Estado</label>
+                <select class="form-select form-select-sm" id="f-estado" name="estado">
+                    <option value="abiertos" {{ 'selected' if f_estado == 'abiertos' }}>Abiertos</option>
+                    {% for k, v in estados.items() %}<option value="{{ k }}" {{ 'selected' if f_estado == k }}>{{ v }} ({{ resumen[k] }})</option>{% endfor %}
+                    <option value="todos" {{ 'selected' if f_estado == 'todos' }}>Todos</option>
+                </select></div>
+            <div><label class="form-label small mb-0" for="f-kapp">KAPP</label>
+                <select class="form-select form-select-sm" id="f-kapp" name="kapp">
+                    <option value="">Todas</option>
+                    {% for k in kapps %}<option value="{{ k.id }}" {{ 'selected' if f_kapp == k.id }}>{{ k.name }} ({{ k.clave }})</option>{% endfor %}
+                </select></div>
+            <div><label class="form-label small mb-0" for="f-modulo">Módulo</label>
+                <select class="form-select form-select-sm" id="f-modulo" name="modulo">
+                    <option value="">Todos</option>
+                    {% for id, nombre in modulos.items() if id != 0 %}<option value="{{ id }}" {{ 'selected' if f_modulo == id }}>{{ nombre }}</option>{% endfor %}
+                </select></div>
+            <button class="btn btn-primary btn-sm">Filtrar</button>
+        </form>
+    </div>
+    {{ tk.tabla(tickets, 'No hay tickets con esos filtros.') }}
+</div>
+<script src="{{ url_for('static', filename='tickets.js') }}" defer></script>
+{% endblock %}

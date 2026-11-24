@@ -1,6 +1,11 @@
 {% extends 'base_layout.html' %}
 
 {% block content %}
+{% import '_tickets_panel.html' as tk %}
+
+{% if tickets is defined and tickets is not none and not detalle %}
+<div class="container-fluid pt-3">{{ tk.panel(tickets, tickets_resumen, estados_ticket) }}</div>
+{% endif %}
 
 <div>
     {% include 'kapps.html' %}

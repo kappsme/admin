@@ -129,3 +129,27 @@ dialog.tx-lightbox[open] img { animation: tx-ampliar .22s cubic-bezier(.2, .8, .
 .tx-aviso { padding: var(--e3) var(--e4); border-radius: var(--radio-chico); background: var(--tema-suave); color: var(--tema-tinta); font-size: var(--t-s); }
 .tx-aviso.error { background: var(--error-suave); color: var(--error); }
 .tx-aviso.ok { background: var(--ok-suave); color: var(--ok); }
+
+/* tickets de soporte: globito de novedades sobre el avatar, lista e historial */
+.tx-con-globito { position: relative; display: inline-flex; }
+.tx-globito { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--pildora);
+  background: var(--error); color: #fff; font-size: 11px; font-weight: 700; line-height: 1; box-shadow: 0 0 0 2px var(--fondo); }
+.tx-con-globito > .tx-globito { position: absolute; top: -2px; right: -4px; pointer-events: none; }
+.tx-globito.punto { min-width: 10px; width: 10px; height: 10px; padding: 0; vertical-align: middle; margin-left: 4px; }
+.tx-globito.en-linea { vertical-align: middle; margin-left: 6px; box-shadow: none; }
+.tx-tickets tr.nuevo td { font-weight: 600; }
+.tx-historial { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--e3); }
+.tx-historial li { padding: var(--e3) var(--e4); border-radius: var(--radio-chico); background: var(--fondo-2); border-left: 3px solid var(--linea); }
+.tx-historial li.soporte { background: var(--tema-suave); border-left-color: var(--tema); }
+.tx-historial li.sistema { background: transparent; border-left-color: var(--linea-suave); }
+
+/* subir archivos: zona con borde punteado y botón en píldora (reemplaza el botón gris del navegador) */
+input[type=file] { display: block; width: 100%; max-width: 100%; padding: 8px; border: 1.5px dashed var(--linea); border-radius: var(--radio-chico);
+  background: var(--fondo); color: var(--texto-2); font: inherit; font-size: var(--t-s); cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
+input[type=file]:hover, input[type=file].arrastrando { border-color: var(--tema); background: var(--tema-suave); }
+input[type=file]:focus-visible { outline: 3px solid var(--tema-suave); outline-offset: 2px; border-color: var(--tema); }
+input[type=file]::file-selector-button { margin: 0 var(--e3) 0 0; padding: 8px 18px; border: 0; border-radius: var(--pildora); background: var(--tema);
+  color: #fff; font: inherit; font-weight: 600; cursor: pointer; transition: background-color .15s ease, transform .1s ease; }
+input[type=file]::file-selector-button:hover { background: var(--tema-fuerte); }
+input[type=file]:active::file-selector-button { transform: scale(.97); }
+@media (prefers-reduced-motion: reduce) { input[type=file], input[type=file]::file-selector-button { transition: none; } }

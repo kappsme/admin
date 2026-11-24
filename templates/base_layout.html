@@ -35,6 +35,12 @@
             </a>
 
             <div class="d-flex gap-2 ms-auto">
+                <!-- TICKETS DE SOPORTE: el globito cuenta los que nadie ha abierto -->
+                <a href="{{ url_for('tickets') }}" class="btn btn-primary p-0 nav-btn tx-con-globito d-inline-grid" style="place-items:center"
+                    title="Tickets de soporte{{ ' · %d por recibir' % tickets_nuevos if tickets_nuevos }}">
+                    <img src="{{ url_for('static', filename='icons_svg/ticket.svg') }}" alt="Tickets" width="24" height="24">
+                    {% if tickets_nuevos %}<span class="tx-globito" aria-label="{{ tickets_nuevos }} por recibir">{{ tickets_nuevos if tickets_nuevos < 10 else '9+' }}</span>{% endif %}
+                </a>
                 <!-- NUEVA KAPP -->
                 <button id="btn-new-kapp" name="btn-new-kapp" type="button" class="btn btn-primary p-0 nav-btn"
                     data-bs-toggle="modal" data-bs-target="#modalNuevaKapp" title="Nueva KAPP">

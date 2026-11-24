@@ -5,6 +5,7 @@ import secrets
 from urllib.parse import urlsplit
 import klogin
 import nuevo_admin
+import soporte_admin
 from dotenv import load_dotenv
 import mysql.connector
 import esquemas
@@ -234,12 +235,22 @@ def home():
         session["clave"] = 'ADMIN' # CODIGO DISTINGUE LA KAPP
         session["username"] = account["username"]
         
+        # TICKETS DE SOPORTE: lo primero que se ve al entrar (los abiertos, los más antiguos primero)
+        try:
+            tickets = soporte_admin.lista(cursor, "abiertos", limite=50)
+            tickets_resumen = soporte_admin.resumen(cursor)
+        except mysql.connector.Error:  # falta correr el SQL de soporte: Admin sigue funcionando
+            tickets, tickets_resumen = None, None
+
         return render_template(
             "home.html"
             , kapps_info=kapps_info
             , kapps_morosas=kapps_morosas
             , columnas = columnas
             , stats = stats
+            , tickets = tickets
+            , tickets_resumen = tickets_resumen
+            , estados_ticket = soporte_admin.ESTADOS
         )
     else:
         return klogin.klogout(msg="Sesión Caducada!")
@@ -669,6 +680,98 @@ def crud_parameter():
     cursor.close()
     return {'success' : success, 'reason' : reason, 'data' : data}
 
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# TICKETS DE SOPORTE (soporte_admin.py): los crean los usuarios en TX; aquí se responden y se les cambia el estado.
+# ---------------------------------------------------------------------------------------------------------------
+@kapps_admin.context_processor
+def tickets_por_recibir():
+    """Globito del botón Tickets de la barra: los que nadie ha abierto todavía."""
+    if "token" not in session or "id" not in session:
+        return {"tickets_nuevos": 0}
+    try:
+        conn = DBConn()
+        cur = conn.cursor()
+        cur.execute("select count(*) from kapps_db.soporte_tickets where estado='enviado'")
+        n = cur.fetchone()[0]
+        cur.close()
+        conn.close()
+    except mysql.connector.Error:
+        n = 0
+    return {"tickets_nuevos": int(n or 0)}
+
+
+@kapps_admin.route("/tickets")
+def tickets():
+    if "token" not in session:
+        return klogin.klogout(msg="Sesión Caducada!")
+    estado = request.args.get("estado", "abiertos")
+    estado = estado if estado in soporte_admin.ESTADOS or estado in ("abiertos", "todos") else "abiertos"
+    kapp_id = request.args.get("kapp", type=int)
+    modulo_id = request.args.get("modulo", type=int)
+    conn = DBConn()
+    cur = conn.cursor(dictionary=True)
+    lista = soporte_admin.lista(cur, estado, kapp_id=kapp_id, modulo_id=modulo_id)
+    resumen = soporte_admin.resumen(cur)
+    cur.execute("select distinct k.id, k.name, k.clave from kapps_db.kapps k join kapps_db.soporte_tickets t on t.kapp_id=k.id order by k.name")
+    kapps = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template("tickets.html", tickets=lista, resumen=resumen, estados=soporte_admin.ESTADOS, f_estado=estado,
+                           f_kapp=kapp_id, f_modulo=modulo_id, kapps=kapps, modulos=soporte_admin.NOMBRES_MODULO)
+
+
+@kapps_admin.route("/tickets/<int:tid>", methods=["GET", "POST"])
+def ticket(tid):
+    if "token" not in session:
+        return klogin.klogout(msg="Sesión Caducada!")
+    conn = DBConn()
+    cur = conn.cursor(dictionary=True)
+    try:
+        t = soporte_admin.ticket(cur, tid)
+        if not t:
+            return render_template("no_dato.html", mensaje="Ticket no encontrado"), 404
+        error, aviso = "", ""
+        if request.method == "POST":
+            try:
+                visible, mensaje = soporte_admin.atender(cur, t, session["id"], request.form.get("estado", t["estado"]),
+                                                         request.form.get("texto"), bool(request.form.get("interno")))
+                conn.commit()
+            except ValueError as e:
+                conn.rollback()
+                error = str(e)
+            else:
+                if visible:
+                    soporte_admin.avisar_usuario(t, request.form.get("estado", t["estado"]), mensaje)
+                return redirect(url_for("ticket", tid=tid, ok=1))
+        elif soporte_admin.marcar_recibido(cur, t, session["id"]):
+            conn.commit()
+            soporte_admin.avisar_usuario(t, "recibido", "")
+            t = soporte_admin.ticket(cur, tid)
+            aviso = "Ticket marcado como recibido: se le avisó al usuario."
+        return render_template("ticket.html", t=t, estados=soporte_admin.ESTADOS, error=error,
+                               aviso=aviso or ("Guardado." if request.args.get("ok") else ""))
+    finally:
+        cur.close()
+        conn.close()
+
+
+@kapps_admin.route("/tickets/<int:tid>/captura")
+def ticket_captura(tid):
+    if "token" not in session:
+        abort(401)
+    conn = DBConn()
+    cur = conn.cursor(dictionary=True)
+    fila = soporte_admin.captura(cur, tid)
+    cur.close()
+    conn.close()
+    if not fila:
+        abort(404)
+    resp = make_response(fila[1])
+    resp.headers["Content-Type"] = fila[0]
+    resp.headers["Cache-Control"] = "private, max-age=86400"
+    return resp
 
 
 @kapps_admin.route("/logout")

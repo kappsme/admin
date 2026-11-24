@@ -1,0 +1,48 @@
+{# Tickets de soporte abiertos (soporte_admin.lista): lo primero que se ve al entrar a Admin. #}
+{% macro estado(t) -%}
+{%- set clase = {'enviado': 'error', 'recibido': 'tema', 'en_proceso': 'tema', 'esperando': 'aviso', 'resuelto': 'ok'}.get(t.estado, '') -%}
+<span class="tx-pil {{ clase }}">{{ t.estado_txt }}</span>
+{%- endmacro %}
+
+{% macro tabla(tickets, vacio='No hay tickets abiertos.') %}
+{% if tickets %}
+<div class="table-responsive">
+<table class="tx-tabla tk-tabla">
+    <thead><tr><th>Ticket</th><th>KAPP</th><th>Usuario</th><th>Módulo</th><th>Nombre</th><th>Estado</th><th>Tiempo abierto</th></tr></thead>
+    <tbody>
+    {% for t in tickets %}
+        <tr class="{{ 'tk-nuevo' if t.estado == 'enviado' }}">
+            <td class="text-nowrap"><a href="{{ url_for('ticket', tid=t.id) }}">{{ t.numero }}</a></td>
+            <td>{{ t.kapp }} <span class="text-muted small">{{ t.clave }}</span></td>
+            <td>{{ t.usuario or t.username }}</td>
+            <td>{{ t.modulo }}</td>
+            <td><a href="{{ url_for('ticket', tid=t.id) }}" class="text-reset">{{ t.titulo }}</a></td>
+            <td>{{ estado(t) }}</td>
+            <td class="text-nowrap tk-tiempo" {% if t.estado != 'resuelto' %}data-desde="{{ t.creado_iso }}"{% endif %}
+                data-seg="{{ t.segundos }}" title="Desde el {{ t.creado.strftime('%d/%m/%Y %H:%M') }}">{{ t.abierto }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted mb-0">{{ vacio }}</p>
+{% endif %}
+{% endmacro %}
+
+{% macro panel(tickets, resumen, estados) %}
+<section class="tk-panel mb-4" aria-labelledby="tk-panel-titulo">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h2 id="tk-panel-titulo" class="h5 mb-0">Tickets de soporte</h2>
+        <a href="{{ url_for('tickets') }}" class="btn btn-outline-primary btn-sm">Ver todos</a>
+    </div>
+    <div class="stats-ribbon" role="group" aria-label="Tickets por estado">
+        {% for k, v in estados.items() %}
+        <a class="stat stat-btn text-decoration-none {{ 'stat-warn' if k == 'enviado' and resumen[k] }}" href="{{ url_for('tickets', estado=k) }}">
+            <span class="stat-num">{{ resumen[k] }}</span><span class="stat-label">{{ 'Por recibir' if k == 'enviado' else v }}</span></a>
+        {% endfor %}
+    </div>
+    {{ tabla(tickets) }}
+</section>
+<script src="{{ url_for('static', filename='tickets.js') }}" defer></script>
+{% endmacro %}
