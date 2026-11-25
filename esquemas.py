@@ -100,6 +100,13 @@ class _Conexion:
         return False
 
 
+# Zona horaria de toda conexión: la hora del negocio (-6:00), la misma que ponían a mano los SET session time_zone.
+# Sin esto, NOW()/CURRENT_TIMESTAMP de una conexión que no lo pusiera quedaba en la hora del servidor (UTC).
+# Las fechas *_utc (Barberías, soporte) se calculan en Python y no dependen de esto.
+ZONA_HORARIA = "-06:00"
+
+
 def conectar(**kwargs):
-    """mysql.connector.connect(**kwargs) con la traducción de kapps_db del ambiente."""
+    """mysql.connector.connect(**kwargs) con la traducción de kapps_db del ambiente y la sesión en ZONA_HORARIA."""
+    kwargs.setdefault("time_zone", ZONA_HORARIA)
     return _Conexion(mysql.connector.connect(**kwargs))
