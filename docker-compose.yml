@@ -12,7 +12,8 @@ services:
     entrypoint: [ "bash", "-c", "python3 main.py"]
   kappsdb:
     platform: linux/x86_64
-    image: mysql:5.7.40
+    # Misma versión que producción (GoDaddy: 10.11.19-MariaDB-cll-lve)
+    image: mariadb:10.11.19
     env_file:
       - .env 
     hostname: ${MYSQL_HOST}
@@ -23,7 +24,7 @@ services:
       - ../kappsdb:/db
   kappsdbsetup:
     platform: linux/x86_64
-    image: mysql:5.7.40
+    image: mariadb:10.11.19
     depends_on:
       - kappsdb
     restart: 'no'
